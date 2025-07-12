@@ -1,0 +1,18 @@
+# Ignore .txt files
+*.txt
+
+# Ignore build output directory
+dist/
+
+# Ignore VSCode counter directory
+.VSCodeCounter/
+
+# Ignore node modules
+node_modules/
+
+# Common files to ignore
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.temp 

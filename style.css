@@ -1,0 +1,746 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    line-height: 1.6;
+    color: #333;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 2rem;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+    backdrop-filter: blur(10px);
+}
+
+header h1 {
+    font-size: 2.5rem;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+}
+
+header p {
+    color: #666;
+    font-size: 1.1rem;
+}
+
+main {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.upload-section {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 2rem;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+.upload-area {
+    border: 3px dashed #667eea;
+    border-radius: 15px;
+    padding: 3rem;
+    text-align: center;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: #f8f9ff;
+}
+
+.upload-area:hover {
+    border-color: #764ba2;
+    background: #f0f2ff;
+    transform: translateY(-2px);
+}
+
+.upload-area.dragover {
+    border-color: #764ba2;
+    background: #e8ebff;
+    transform: scale(1.02);
+}
+
+.upload-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.7;
+}
+
+.upload-area p {
+    font-size: 1.2rem;
+    color: #666;
+    margin-bottom: 1rem;
+}
+
+
+
+.file-info {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #e8f4fd;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.analysis-section {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 2rem;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    text-align: center;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.progress {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.status {
+    font-size: 1.1rem;
+    color: #666;
+}
+
+.results-section {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 2rem;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+.results-section h2 {
+    color: #2c3e50;
+    margin: 0 0 1.5rem 0;
+    font-size: 2rem;
+}
+
+.summary-card {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 15px;
+    margin-bottom: 2rem;
+    border-left: 5px solid #667eea;
+}
+
+
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+}
+
+.info-item label {
+    font-weight: 600;
+    color: #495057;
+}
+
+.info-item span {
+    color: #667eea;
+    font-weight: 700;
+}
+
+.streams-section {
+    margin-top: 2rem;
+}
+
+.program-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid #667eea;
+    padding-bottom: 0.5rem;
+}
+.program-header h3 {
+    margin: 0;
+    border-bottom: none;
+    padding-bottom: 0;
+    font-size: 1.5rem;
+    color: #2c3e50;
+    font-weight: bold;
+}
+/* 移除节目标题横线 */
+.streams-section h3 {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+/* 新增：只给表格标题加横线（如有需要可加类名 .streams-table-title） */
+.streams-table-title {
+    border-bottom: 2px solid #667eea;
+    padding-bottom: 0.5rem;
+}
+
+.copy-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.copy-info-btn {
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.copy-text-btn {
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    color: white;
+}
+
+.copy-text-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+}
+
+.copy-text-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+.copy-bbcode-btn {
+    background: linear-gradient(135deg, #2196F3, #1976D2);
+    color: white;
+}
+
+.copy-bbcode-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+}
+
+.copy-bbcode-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+}
+
+.streams-table-container {
+    overflow-x: auto;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.streams-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.streams-table thead {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+}
+
+.streams-table th,
+.streams-table td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.streams-table th {
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.streams-table tbody tr {
+    transition: background-color 0.3s ease;
+}
+
+.streams-table tbody tr:hover {
+    background-color: #f8f9ff;
+}
+
+.streams-table tbody tr:nth-child(even) {
+    background-color: #fafbfc;
+}
+
+
+
+footer {
+    text-align: center;
+    margin-top: 2rem;
+    padding: 1rem;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+    
+    header h1 {
+        font-size: 2rem;
+    }
+    
+    .upload-area {
+        padding: 2rem 1rem;
+    }
+    
+    .info-grid {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+    
+    .streams-table {
+        font-size: 0.9rem;
+    }
+    
+    .streams-table th,
+    .streams-table td {
+        padding: 0.7rem 0.5rem;
+    }
+}
+
+/* Loading animation */
+.loading {
+    position: relative;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 完整解析按钮样式 */
+.full-parse-container {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: #fff3cd;
+    border-radius: 10px;
+    border: 1px solid #ffeaa7;
+    text-align: center;
+}
+
+.parse-notice {
+    margin-bottom: 1rem;
+}
+
+.parse-notice p {
+    margin: 0.3rem 0;
+    color: #856404;
+    font-size: 0.9rem;
+}
+
+.full-parse-button {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    padding: 0.8rem 2rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.full-parse-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.full-parse-button:active {
+    transform: translateY(0);
+}
+
+.full-parse-button:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.full-parse-button:disabled:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+/* 重置按钮样式 */
+.reset-container {
+    margin-top: 2rem;
+    padding: 1rem;
+    text-align: center;
+    border-top: 1px solid #e9ecef;
+}
+
+.reset-button {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    border: none;
+    padding: 0.8rem 2rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+
+.reset-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+}
+
+.reset-button:active {
+    transform: translateY(0);
+}
+
+/* 编码信息容器 */
+.codec-info-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.codec-info-text {
+    flex: 1;
+}
+
+/* AVS详细信息相关样式 */
+.toggle-details-btn {
+    background: none;
+    color: #666;
+    border: none;
+    padding: 0;
+    border-radius: 0;
+    font-size: 1.4rem;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    min-width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.toggle-details-btn:hover {
+    color: #333;
+}
+
+.avs-details-row {
+    background-color: #f8f9ff !important;
+}
+
+.avs-details-card {
+    /* 卡片整体渐变：左上到右下 */
+    background: linear-gradient(135deg, #f4f6fa 0%, #d6e3f0 100%);
+    border: none;
+    border-radius: 12px;
+    margin: 1rem 1.5rem;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.avs-card-header {
+    background: transparent;
+    color: #495057;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    border-bottom: none;
+    position: relative;
+}
+
+.avs-card-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 1.5rem;
+    width: calc(100% - 3rem);
+    height: 2px;
+    background: #007bff;
+}
+
+.avs-card-header .avs-icon {
+    font-size: 1.3rem;
+}
+
+.avs-card-header h5 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #495057;
+}
+
+.avs-card-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem 2rem;
+    padding: 1.5rem 1.5rem 2.5rem 1.5rem;
+    background: transparent;
+}
+
+.avs-info-section {
+    background: transparent;
+    border-radius: 8px;
+    padding: 0;
+    border: 1px solid #e9ecef;
+    overflow: hidden;
+    margin-bottom: 0;
+}
+
+.avs-info-section:last-child {
+    border-left: 1px solid #e9ecef;
+}
+
+.avs-info-section h6 {
+    background: linear-gradient(90deg, #fbfcfd 0%, #f0f3f8 100%);
+    color: #6c757d;
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+    padding: 0.6rem 1rem;
+    border-bottom: none;
+    border-left: 3px solid #007bff;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    text-align: left;
+}
+
+.avs-info-item {
+    display: flex;
+    align-items: center;
+    padding: 0;
+    border-bottom: 1px solid #e9ecef;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.avs-info-item:last-child {
+    border-bottom: none;
+}
+
+.avs-info-item label {
+    background: linear-gradient(90deg, #ecf3ff 0%, #edf4fd 100%);
+    color: #495057;
+    font-weight: 500;
+    font-size: 0.9rem;
+    text-align: left;
+    padding: 0.8rem 1rem;
+    border-right: 1px solid #e9ecef;
+    width: 40%;
+    min-width: 120px;
+    max-width: 160px;
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.avs-info-item span {
+    background: white;
+    color: #212529;
+    font-weight: 600;
+    text-align: left;
+    font-size: 0.9rem;
+    padding: 0.8rem 1rem;
+    width: 60%;
+    flex: 1;
+}
+
+.avs-generation-tag {
+    background: #28a745;
+    color: white;
+    padding: 0.3rem 0.8rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    display: inline-block;
+    border: none;
+}
+
+@media (max-width: 768px) {
+    .program-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .copy-buttons {
+        flex-direction: column;
+        gap: 0.3rem;
+        align-self: flex-end;
+    }
+    
+    .copy-info-btn {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.8rem;
+    }
+
+    .codec-info-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.3rem;
+    }
+    
+    .toggle-details-btn {
+        align-self: flex-start;
+    }
+    
+    .avs-card-content {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        padding: 1rem 1rem 2.5rem 1rem;
+    }
+    
+    .avs-details-card {
+        margin: 1rem;
+    }
+    
+    .avs-info-section {
+        padding: 0;
+        background: transparent;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+        overflow: hidden;
+        margin-bottom: 0;
+    }
+    
+    .avs-info-section:first-child {
+        margin-bottom: 2rem;
+    }
+    
+    .avs-info-section h6 {
+        background: linear-gradient(90deg, #fbfcfd 0%, #f0f3f8 100%);
+        font-size: 1rem;
+        padding: 0.6rem 1rem;
+        border-left: 3px solid #007bff;
+        border-bottom: none;
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+        border-bottom-left-radius: 8px;
+        margin: 0;
+        text-align: left;
+    }
+    
+    .avs-info-item {
+        display: flex;
+        align-items: center;
+        padding: 0;
+        border-bottom: 1px solid #e9ecef;
+        margin: 0;
+    }
+    
+    .avs-info-item:last-child {
+        border-bottom: none;
+    }
+    
+    .avs-info-item label {
+        background: linear-gradient(90deg, #ecf3ff 0%, #edf4fd 100%);
+        padding: 0.8rem 1rem;
+        border-right: 1px solid #e9ecef;
+        margin: 0;
+        width: 45%;
+        min-width: 100px;
+        max-width: 140px;
+        flex-shrink: 0;
+    }
+    
+    .avs-info-item span {
+        background: white;
+        text-align: left;
+        font-weight: 600;
+        padding: 0.8rem 1rem;
+        width: 55%;
+        flex: 1;
+    }
+} 
+
+/* 重新上传按钮 */
+.re-upload-btn {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    padding: 0.8rem 2rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.re-upload-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.re-upload-btn:active {
+    transform: translateY(0);
+} 

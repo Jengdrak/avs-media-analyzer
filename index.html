@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TS传输流自研标准分析器</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>TS传输流自🧂标准分析器</h1>
+        </header>
+
+        <main>
+            <div class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📁</div>
+                    <p>点击选择或拖拽 TS 文件到此处</p>
+                </div>
+                <input type="file" id="fileInput" accept=".ts,.m2ts" style="display: none;" />
+                <div class="file-info" id="fileInfo" style="display: none;">
+                    <span id="fileName"></span>
+                    <span id="fileSize"></span>
+                </div>
+            </div>
+
+            <div class="analysis-section" id="analysisSection" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress" id="progressBar"></div>
+                </div>
+                <div class="status" id="status">正在解析...</div>
+            </div>
+
+            <div class="results-section" id="resultsSection" style="display: none;">
+                <div class="summary-card">
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>文件大小:</label>
+                            <span id="fileSizeResult"></span>
+                        </div>
+                        <div class="info-item">
+                            <label>PMT PID:</label>
+                            <span id="pmtPid"></span>
+                        </div>
+                        <div class="info-item">
+                            <label>流数量:</label>
+                            <span id="streamCount"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="streamsContainer">
+                    <!-- TSAnalyzer 将在此处动态生成节目和流信息区块 -->
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <button class="re-upload-btn" id="reUploadBtn" style="display: none;">重新上传文件</button>
+            <p>支持标准 MPEG-2 传输流 (.ts) 文件解析</p>
+        </footer>
+    </div>
+
+    <script type="module" src="dist/ts-analyzer.js"></script>
+</body>
+</html> 

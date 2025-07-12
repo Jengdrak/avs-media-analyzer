@@ -1,0 +1,39 @@
+{
+  "name": "ts-avs-analyzer",
+  "version": "1.2.0",
+  "description": "TS传输流自研标准分析器",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 8080",
+    "serve": "npx serve .",
+    "dev": "npx live-server ."
+  },
+  "keywords": [
+    "mpeg",
+    "transport-stream",
+    "ts",
+    "video",
+    "audio",
+    "codec",
+    "analysis",
+    "parser"
+  ],
+  "author": "TS-Analyzer Team",
+  "license": "MIT",
+  "devDependencies": {
+    "live-server": "^1.2.2",
+    "serve": "^14.2.0",
+    "typescript": "^5.8.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/ts-analyzer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/ts-analyzer/issues"
+  },
+  "homepage": "https://github.com/yourusername/ts-analyzer#readme",
+  "dependencies": {
+    "html-inline": "^1.2.0"
+  }
+}
