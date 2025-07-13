@@ -164,7 +164,7 @@ export function AVSVideoInfoToDisplayItems(details: AVSVideoInfo): { label: stri
     items.push(
         { label: '扫描方式', value: details.progressive ? '逐行' : '隔行' },
         { label: '色度格式', value: getChromaFormatName(details.chroma_format) },
-        { label: '位深度', value: `${details.luma_bit_depth} bit` },
+        { label: '位深度', value: `${details.luma_bit_depth} bits` },
         { label: '帧率', value: `${details.frame_rate} fps` },
         { label: '码率', value: formatBitRate(details.bit_rate) },
         { label: '低延时', value: details.low_delay ? '是' : '否' }
@@ -222,7 +222,7 @@ export function AVSVideoDescriptorToDisplayItems(descriptor: AVSVideoDescriptor)
     
     const secondBatch: { label: string; value: string }[] = [];
     secondBatch.push({ label: '色度格式', value: getChromaFormatName(descriptor.chroma_format) });
-    secondBatch.push({ label: '位深度', value: `${descriptor.luma_bit_depth} bit` });
+    secondBatch.push({ label: '位深度', value: `${descriptor.luma_bit_depth} bits` });
     secondBatch.push({ label: '帧率', value: `${descriptor.frame_rate} fps` });
     items.push(...secondBatch);
     
