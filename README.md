@@ -1,5 +1,7 @@
 # TS-AVS Analyzer
 
+[简体中文](README.zh-Hans.md) | [English](README.en.md)
+
 AVS/AVS2/AVS3/Audio Vivid元信息解析（仅限ts格式）
 
 ## 在线使用
