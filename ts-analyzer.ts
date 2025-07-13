@@ -596,6 +596,20 @@ class TSAnalyzer {
         return streamType === 0xd5;
     }
 
+    // 检查节目是否包含AVS3视频流
+    private hasAVS3Video(program: ProgramInfo): boolean {
+        return Array.from(program.streams.values()).some(stream => 
+            stream.streamType === 0xD4 && stream.avsDetails
+        );
+    }
+
+    // 检查节目是否有非AVS3的可复制内容
+    private hasNonAVS3Content(program: ProgramInfo): boolean {
+        return Array.from(program.streams.values()).some(stream => 
+            stream.avsDetails && stream.streamType !== 0xD4
+        );
+    }
+
 
 
     // 十六进制打印辅助函数
@@ -1171,6 +1185,11 @@ class TSAnalyzer {
         for (const [programNumber, program] of this.programs) {
             // 检查该节目是否有avsDetails
             const hasAvsDetails = Array.from(program.streams.values()).some(stream => stream.avsDetails);
+            const hasAVS3 = this.hasAVS3Video(program);
+            const hasNonAVS3 = this.hasNonAVS3Content(program);
+            
+            // 如果只有AVS3内容，按钮在AVS3未勾选时应该禁用
+            const shouldDisableWhenAVS3Unchecked = hasAVS3 && !hasNonAVS3;
             
             allHtml += `
                 <div class="streams-section">
@@ -1178,8 +1197,25 @@ class TSAnalyzer {
                         <h3>节目 ${programNumber} (PMT PID: 0x${program.pmtPid.toString(16).toUpperCase().padStart(4, '0')})</h3>
                         ${hasAvsDetails ? `
                             <div class="copy-buttons">
-                                <button class="copy-info-btn copy-text-btn" onclick="copyProgramInfo(${programNumber})">Text 📋</button>
-                                <button class="copy-info-btn copy-bbcode-btn" onclick="copyProgramInfoBBCode(${programNumber})">BBCode 📋</button>
+                                <button class="copy-info-btn copy-text-btn ${shouldDisableWhenAVS3Unchecked ? 'conditionally-disabled' : ''}" 
+                                        onclick="copyProgramInfo(${programNumber})" 
+                                        data-program="${programNumber}">Text 📋</button>
+                                <button class="copy-info-btn copy-bbcode-btn ${shouldDisableWhenAVS3Unchecked ? 'conditionally-disabled' : ''}" 
+                                        onclick="copyProgramInfoBBCode(${programNumber})" 
+                                        data-program="${programNumber}">BBCode 📋</button>
+                                <div class="copy-options">
+                                    <label class="option-checkbox">
+                                        <input type="checkbox" id="hiddenFormat_${programNumber}">
+                                        <span>隐藏格式</span>
+                                    </label>
+                                    ${hasAVS3 ? `
+                                        <label class="option-checkbox">
+                                            <input type="checkbox" id="includeAVS3_${programNumber}" 
+                                                   onchange="updateButtonStates(${programNumber})">
+                                            <span>AVS3</span>
+                                        </label>
+                                    ` : ''}
+                                </div>
                             </div>
                         ` : ''}
                     </div>
@@ -1211,6 +1247,11 @@ class TSAnalyzer {
         (window as any).copyProgramInfoBBCode = (programNumber: number) => {
             this.copyProgramInfoBBCode(programNumber);
         };
+        
+        // 添加按钮状态更新函数到全局作用域
+        (window as any).updateButtonStates = (programNumber: number) => {
+            this.updateButtonStates(programNumber);
+        };
     }
 
     // 复制节目信息的方法
@@ -1218,11 +1259,20 @@ class TSAnalyzer {
         const program = this.programs.get(programNumber);
         if (!program) return;
 
+        // 获取AVS3选项状态
+        const includeAVS3Checkbox = document.getElementById(`includeAVS3_${programNumber}`) as HTMLInputElement;
+        const includeAVS3 = includeAVS3Checkbox?.checked || false; // 默认为false
+
         // 收集该节目中所有流的avsDetails信息
         const avsDetailsList: string[] = [];
         
         for (const [pid, stream] of program.streams) {
             if (stream.avsDetails) {
+                // 如果不包含AVS3且当前是AVS3视频流，则跳过
+                if (!includeAVS3 && stream.streamType === 0xD4) {
+                    continue;
+                }
+
                 const copyText = this.isAVSAudioStream(stream.streamType) 
                     ? AVSAudioInfoToCopyFormat(stream.avsDetails as AVSAudioInfo, pid)
                     : AVSVideoInfoToCopyFormat(stream.avsDetails as AVSVideoInfo, pid);
@@ -1257,11 +1307,23 @@ class TSAnalyzer {
         const program = this.programs.get(programNumber);
         if (!program) return;
 
+        // 获取选项状态
+        const hiddenFormatCheckbox = document.getElementById(`hiddenFormat_${programNumber}`) as HTMLInputElement;
+        const includeAVS3Checkbox = document.getElementById(`includeAVS3_${programNumber}`) as HTMLInputElement;
+        
+        const useHiddenFormat = hiddenFormatCheckbox?.checked || false;
+        const includeAVS3 = includeAVS3Checkbox?.checked || false; // 默认为false
+
         // 收集该节目中所有流的avsDetails信息
         const avsDetailsList: string[] = [];
         
         for (const [pid, stream] of program.streams) {
             if (stream.avsDetails) {
+                // 如果不包含AVS3且当前是AVS3视频流，则跳过
+                if (!includeAVS3 && stream.streamType === 0xD4) {
+                    continue;
+                }
+
                 const copyText = this.isAVSAudioStream(stream.streamType) 
                     ? AVSAudioInfoToCopyFormat(stream.avsDetails as AVSAudioInfo, pid)
                     : AVSVideoInfoToCopyFormat(stream.avsDetails as AVSVideoInfo, pid);
@@ -1280,8 +1342,13 @@ class TSAnalyzer {
             return;
         }
 
-        // 各项间空一行，并在开头和结尾添加BBCode标签
-        const combinedText = '[quote]\n' + avsDetailsList.join('\n\n') + '\n[/quote]';
+        // 根据选项生成不同的BBCode格式
+        let combinedText: string;
+        if (useHiddenFormat) {
+            combinedText = '[spoiler="AVS Additional Mediainfo"]\n' + avsDetailsList.join('\n\n') + '\n[/spoiler]';
+        } else {
+            combinedText = '[quote]\n' + avsDetailsList.join('\n\n') + '\n[/quote]';
+        }
 
         navigator.clipboard.writeText(combinedText).then(() => {
             this.showCopyNotification('已复制BBCode格式');
@@ -1289,6 +1356,41 @@ class TSAnalyzer {
             console.error('复制失败:', err);
             this.showCopyNotification('复制失败');
         });
+    }
+
+    // 更新按钮状态
+    private updateButtonStates(programNumber: number): void {
+        const program = this.programs.get(programNumber);
+        if (!program) return;
+
+        const includeAVS3Checkbox = document.getElementById(`includeAVS3_${programNumber}`) as HTMLInputElement;
+        const textBtn = document.querySelector(`button[data-program="${programNumber}"].copy-text-btn`) as HTMLButtonElement;
+        const bbcodeBtn = document.querySelector(`button[data-program="${programNumber}"].copy-bbcode-btn`) as HTMLButtonElement;
+
+        if (!includeAVS3Checkbox || !textBtn || !bbcodeBtn) return;
+
+        const hasAVS3 = this.hasAVS3Video(program);
+        const hasNonAVS3 = this.hasNonAVS3Content(program);
+        const includeAVS3 = includeAVS3Checkbox.checked;
+
+        // 如果只有AVS3内容且AVS3未勾选，禁用按钮
+        const shouldDisable = hasAVS3 && !hasNonAVS3 && !includeAVS3;
+
+        if (shouldDisable) {
+            // 移除初始状态类，添加禁用类
+            textBtn.classList.remove('conditionally-disabled');
+            bbcodeBtn.classList.remove('conditionally-disabled');
+            textBtn.classList.add('disabled');
+            bbcodeBtn.classList.add('disabled');
+            textBtn.disabled = true;
+            bbcodeBtn.disabled = true;
+        } else {
+            // 移除所有禁用相关的类
+            textBtn.classList.remove('disabled', 'conditionally-disabled');
+            bbcodeBtn.classList.remove('disabled', 'conditionally-disabled');
+            textBtn.disabled = false;
+            bbcodeBtn.disabled = false;
+        }
     }
 
     // 显示复制通知

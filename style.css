@@ -217,7 +217,36 @@ main {
 
 .copy-buttons {
     display: flex;
+    align-items: center;
     gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.copy-options {
+    display: flex;
+    gap: 1rem;
+    margin-left: 1rem;
+}
+
+.option-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: #555;
+    user-select: none;
+}
+
+.option-checkbox input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #667eea;
+    cursor: pointer;
+}
+
+.option-checkbox span {
+    white-space: nowrap;
 }
 
 .copy-info-btn {
@@ -259,6 +288,18 @@ main {
 .copy-bbcode-btn:active {
     transform: translateY(0);
     box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+}
+
+/* 禁用状态的按钮样式 */
+.copy-info-btn:disabled,
+.copy-info-btn.disabled,
+.copy-info-btn.conditionally-disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+    pointer-events: none;
+    filter: grayscale(10%);
 }
 
 .streams-table-container {
