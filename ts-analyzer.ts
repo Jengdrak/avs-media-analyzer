@@ -408,20 +408,8 @@ class TSAnalyzer {
 
     // 初始化分析器（用于PMT解析时）
     private initAnalyzerIfNeeded(streamType: number): void {
-        const analyzerMap = {
-            0x42: { prop: 'avsAnalyzer', module: './avs-analyzer.js', class: 'AVS1Analyzer', type: 'AVS' },
-            0xd2: { prop: 'avs2Analyzer', module: './avs2-analyzer.js', class: 'AVS2Analyzer', type: 'AVS2' },
-            0xd4: { prop: 'avs3Analyzer', module: './avs3-analyzer.js', class: 'AVS3Analyzer', type: 'AVS3' },
-            0xd5: { prop: 'av3aAnalyzer', module: './av3a-analyzer.js', class: 'AV3AAnalyzer', type: 'Audio Vivid' }
-        };
-
-        const config = analyzerMap[streamType as keyof typeof analyzerMap];
-        if (!config) return;
-
-        const analyzer = (this as any)[config.prop];
-        
-        // 如果分析器已存在，跳过
-        if (analyzer) {
+        // 检查分析器是否已存在
+        if (this.getAnalyzer(streamType)) {
             return;
         }
 
@@ -431,11 +419,39 @@ class TSAnalyzer {
         }
 
         // 开始初始化
-        const initPromise = import(config.module).then(module => {
-            (this as any)[config.prop] = new module[config.class]();
-            console.log(`⚡ ${config.type}分析器已初始化 (PMT时)`);
-        }).catch(error => {
-            console.error(`${config.type}分析器初始化失败:`, error);
+        let initPromise: Promise<void>;
+        
+        switch (streamType) {
+            case 0x42: // AVS1
+                initPromise = import('./avs-analyzer.js').then(module => {
+                    this.avsAnalyzer = new module.AVS1Analyzer();
+                    console.log('⚡ AVS分析器已初始化 (PMT时)');
+                });
+                break;
+            case 0xd2: // AVS2
+                initPromise = import('./avs2-analyzer.js').then(module => {
+                    this.avs2Analyzer = new module.AVS2Analyzer();
+                    console.log('⚡ AVS2分析器已初始化 (PMT时)');
+                });
+                break;
+            case 0xd4: // AVS3
+                initPromise = import('./avs3-analyzer.js').then(module => {
+                    this.avs3Analyzer = new module.AVS3Analyzer();
+                    console.log('⚡ AVS3分析器已初始化 (PMT时)');
+                });
+                break;
+            case 0xd5: // Audio Vivid
+                initPromise = import('./av3a-analyzer.js').then(module => {
+                    this.av3aAnalyzer = new module.AV3AAnalyzer();
+                    console.log('⚡ Audio Vivid分析器已初始化 (PMT时)');
+                });
+                break;
+            default:
+                return; // 不支持的流类型
+        }
+
+        initPromise = initPromise.catch(error => {
+            console.error(`分析器初始化失败 (streamType: 0x${streamType.toString(16)}):`, error);
         }).finally(() => {
             // 完成后从Map中移除
             this.initializingPromises.delete(streamType);
@@ -446,20 +462,18 @@ class TSAnalyzer {
 
     // 获取已初始化的分析器
     private getAnalyzer(streamType: number): { analyzer: any; type: string } | null {
-        const analyzerMap = {
-            0x42: { prop: 'avsAnalyzer', type: 'AVS' },
-            0xd2: { prop: 'avs2Analyzer', type: 'AVS2' },
-            0xd4: { prop: 'avs3Analyzer', type: 'AVS3' },
-            0xd5: { prop: 'av3aAnalyzer', type: 'Audio Vivid' }
-        };
-
-        const config = analyzerMap[streamType as keyof typeof analyzerMap];
-        if (!config) return null;
-
-        const analyzer = (this as any)[config.prop];
-        if (!analyzer) return null;
-
-        return { analyzer, type: config.type };
+        switch (streamType) {
+            case 0x42: // AVS1
+                return this.avsAnalyzer ? { analyzer: this.avsAnalyzer, type: 'AVS' } : null;
+            case 0xd2: // AVS2
+                return this.avs2Analyzer ? { analyzer: this.avs2Analyzer, type: 'AVS2' } : null;
+            case 0xd4: // AVS3
+                return this.avs3Analyzer ? { analyzer: this.avs3Analyzer, type: 'AVS3' } : null;
+            case 0xd5: // Audio Vivid
+                return this.av3aAnalyzer ? { analyzer: this.av3aAnalyzer, type: 'Audio Vivid' } : null;
+            default:
+                return null;
+        }
     }
 
     // 等待所有分析器初始化完成
