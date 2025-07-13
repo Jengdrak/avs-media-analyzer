@@ -15,20 +15,23 @@ import {
  * Bitrate tables for different channel configurations (values in kbps)
  */
 const BITRATE_TABLES: Record<ChannelConfiguration, number[]> = {
-    [ChannelConfiguration.MONO]: [0, 32, 44, 56, 64, 72, 80, 96, 128, 144, 164, 192, 0, 0, 0, 0],
-    [ChannelConfiguration.STEREO]: [0, 32, 48, 64, 80, 96, 128, 144, 192, 256, 320, 0, 0, 0, 0, 0],
-    [ChannelConfiguration.MC_5_1]: [192, 256, 320, 384, 448, 512, 640, 720, 144, 96, 128, 160, 0, 0, 0, 0],
-    [ChannelConfiguration.MC_7_1]: [192, 480, 256, 384, 576, 640, 128, 160, 0, 0, 0, 0, 0, 0, 0, 0],
-    [ChannelConfiguration.FOA]: [0, 96, 128, 192, 256, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [ChannelConfiguration.MC_5_1_2]: [152, 320, 480, 576, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [ChannelConfiguration.MC_5_1_4]: [176, 384, 576, 704, 256, 448, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [ChannelConfiguration.MC_7_1_2]: [216, 480, 576, 384, 768, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [ChannelConfiguration.MC_7_1_4]: [240, 608, 384, 512, 832, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [ChannelConfiguration.HOA_ORDER2]: [192, 256, 320, 384, 480, 512, 640, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [ChannelConfiguration.HOA_ORDER3]: [256, 320, 384, 512, 640, 896, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [ChannelConfiguration.MONO]: [0, 32, 44, 56, 64, 72, 80, 96, 128, 144, 164, 192],
+    [ChannelConfiguration.STEREO]: [0, 32, 48, 64, 80, 96, 128, 144, 192, 256, 320],
+    [ChannelConfiguration.MC_5_1]: [192, 256, 320, 384, 448, 512, 640, 720, 144, 96, 128, 160],
+    [ChannelConfiguration.MC_7_1]: [192, 480, 256, 384, 576, 640, 128, 160],
+    [ChannelConfiguration.FOA]: [0, 96, 128, 192, 256],
+    [ChannelConfiguration.MC_5_1_2]: [152, 320, 480, 576],
+    [ChannelConfiguration.MC_5_1_4]: [176, 384, 576, 704, 256, 448],
+    [ChannelConfiguration.MC_7_1_2]: [216, 480, 576, 384, 768],
+    [ChannelConfiguration.MC_7_1_4]: [240, 608, 384, 512, 832],
+    [ChannelConfiguration.HOA_ORDER2]: [192, 256, 320, 384, 480, 512, 640],
+    [ChannelConfiguration.HOA_ORDER3]: [256, 320, 384, 512, 640, 896],
     [ChannelConfiguration.Reserved]: []
 };
 
+function queryBitrate(channel_configuration: ChannelConfiguration, bitrate_index: number): number {
+    return BITRATE_TABLES[channel_configuration][bitrate_index] || 0;
+}
 
 /**
  * Parsed AV3A frame header information
@@ -191,7 +194,7 @@ export class AV3AAnalyzer {
                         const objects = reader.readBits(7) + 1;
                         object_channel_number = objects;
                         const obj_bitrate_index = reader.readBits(4);
-                        bit_rate = (BITRATE_TABLES[ChannelConfiguration.MONO][obj_bitrate_index] || 0) * objects;
+                        bit_rate = queryBitrate(ChannelConfiguration.MONO, obj_bitrate_index) * objects;
                     } else if (soundBedType == 1) {
                         const channel_number_index = reader.readBits(7);
                         channel_configuration = AV3AUtils.getChannelConfiguration(channel_number_index);
@@ -200,8 +203,8 @@ export class AV3AAnalyzer {
                         object_channel_number = objects;
                         const obj_bitrate_index = reader.readBits(4);
                         
-                        const bed_bitrate = BITRATE_TABLES[channel_configuration][bed_bitrate_index] || 0;
-                        const obj_bitrate = (BITRATE_TABLES[ChannelConfiguration.MONO][obj_bitrate_index] || 0) * objects;
+                        const bed_bitrate = queryBitrate(channel_configuration, bed_bitrate_index);
+                        const obj_bitrate = queryBitrate(ChannelConfiguration.MONO, obj_bitrate_index) * objects;
                         bit_rate = bed_bitrate + obj_bitrate;
                         channel_number = AV3AUtils.getChannelCount(channel_configuration);
                     }
@@ -217,7 +220,7 @@ export class AV3AAnalyzer {
             
             if (audio_codec_id == 2 && coding_profile != CodingProfile.OBJECT_METADATA) {
                 const bitrate_index = reader.readBits(4);
-                bit_rate = BITRATE_TABLES[channel_configuration][bitrate_index] || 0;
+                bit_rate = queryBitrate(channel_configuration, bitrate_index);
             }
 
             bit_rate *= 1000;
