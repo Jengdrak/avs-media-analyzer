@@ -117,7 +117,7 @@ export interface AVSAudioInfo {
 
 // 格式化比特率
 export function formatBitRate(bps: number): string {
-    if (bps === 0) return '0 bps';
+    if (bps === 0) return '0';
     
     const k = 1000; // 比特率通常使用1000作为进制
     const sizes = ['bps', 'Kbps', 'Mbps', 'Gbps'];
@@ -140,7 +140,7 @@ export function formatBitRate(bps: number): string {
 
 // 格式化采样频率
 export function formatSamplingFrequency(hz: number): string {
-    if (hz === 0) return '0 Hz';
+    if (hz === 0) return '0';
     
     if (hz >= 1000) {
         return `${(hz / 1000).toFixed(1)} kHz`;
