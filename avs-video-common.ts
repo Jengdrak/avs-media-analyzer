@@ -127,10 +127,10 @@ export function getAspectRatioInfo(aspectRatioInfo: number): AspectRatioInfo {
 
 /**
  * Frame rate table for all AVS standards (各AVS标准共用帧率表)
- * Basic frame rates up to 60fps - each analyzer maintains extended versions
- * 基础帧率表（到60fps）- 各分析器维护扩展版本
- * Index corresponds to 4-bit frame rate code (0-8)
- * 索引对应4位帧率码（0-8）
+ * Complete standard frame rates - individual analyzers subset as needed
+ * 完整的标准帧率表 - 各分析器根据需要进行截取
+ * Index corresponds to 4-bit frame rate code (0-14)
+ * 索引对应4位帧率码（0-14）
  */
 export const FRAME_RATES = [
     0,      // 0000: forbidden
