@@ -170,7 +170,7 @@ type AVS1SequenceInfo = AVS1SequenceHeader | (AVS1SequenceHeader & SequenceDispl
             const sample_range = reader.readBits(1);
             
             // Read colour_description (1 bit)
-            const colour_description_flag = reader.readBits(1) === 1;
+            const colour_description_flag = reader.readBoolean();
             
             let colour_primaries: number | undefined;
             let transfer_characteristics: number | undefined;
@@ -323,7 +323,7 @@ type AVS1SequenceInfo = AVS1SequenceHeader | (AVS1SequenceHeader & SequenceDispl
             const level_id = reader.readBits(8);
             
             // Progressive sequence flag
-            const progressive = reader.readBits(1) === 1;
+            const progressive = reader.readBoolean();
             
             // Horizontal and vertical size
             const horizontal_size = reader.readBits(14);
@@ -352,7 +352,7 @@ type AVS1SequenceInfo = AVS1SequenceHeader | (AVS1SequenceHeader & SequenceDispl
             const bit_rate_upper = reader.readBits(12);
             
             // Low delay flag
-            const low_delay = reader.readBits(1) === 1;
+            const low_delay = reader.readBoolean();
             
             // Marker bit  
             reader.checkMarkerBit();
@@ -368,14 +368,14 @@ type AVS1SequenceInfo = AVS1SequenceHeader | (AVS1SequenceHeader & SequenceDispl
             let scene_model = 0;
 
             if (profile_id === 0x24) { // Shenzhan Profile
-                background_picture_disable = reader.readBits(1) === 1;
-                core_picture_disable = reader.readBits(1) === 1;
+                background_picture_disable = reader.readBoolean();
+                core_picture_disable = reader.readBoolean();
                 
                 if (core_picture_disable === false) {
                     core_picture_buffer_size = reader.readBits(4);
                 }
                 
-                slice_set_disable = reader.readBits(1) === 1;
+                slice_set_disable = reader.readBoolean();
                 
                 // Marker bit
                 reader.checkMarkerBit();

@@ -104,9 +104,9 @@ export function parseAVS1VideoDescriptor(payload: Uint8Array): ParsedAVS1VideoDe
     const profile_id = reader.readBits(8);
     const level_id = reader.readBits(8);
     
-    const multiple_frame_rate_flag = reader.readBits(1);
+    const multiple_frame_rate_flag = reader.readBoolean();
     const frame_rate_code = reader.readBits(4);
-    const AVS_still_present = reader.readBits(1);
+    const AVS_still_present = reader.readBoolean();
     const chroma_format_value = reader.readBits(2);
     
     const sample_precision = reader.readBits(3);
@@ -118,9 +118,9 @@ export function parseAVS1VideoDescriptor(payload: Uint8Array): ParsedAVS1VideoDe
         generation_name: profile_id == 0x48 ? 'AVS+' : 'AVS',
         profile_name: AVS1Utils.getProfileName(profile_id),
         level_name: AVS1Utils.getLevelName(level_id),
-        multiple_frame_rate_flag: multiple_frame_rate_flag === 1,
+        multiple_frame_rate_flag,
         frame_rate: AVS1Utils.getFrameRate(frame_rate_code),
-        AVS_still_present: AVS_still_present === 1,
+        AVS_still_present,
         chroma_format: chroma_format_value as ChromaFormat,
         luma_bit_depth: bit_depth_info.luma_bit_depth,
         chroma_bit_depth: bit_depth_info.chroma_bit_depth,
@@ -158,9 +158,9 @@ export function parseAVS2VideoDescriptor(payload: Uint8Array): ParsedAVS2VideoDe
     const profile_id = reader.readBits(8);
     const level_id = reader.readBits(8);
     
-    const multiple_frame_rate_flag = reader.readBits(1);
+    const multiple_frame_rate_flag = reader.readBoolean();
     const frame_rate_code = reader.readBits(4);
-    const AVS_still_present = reader.readBits(1);
+    const AVS_still_present = reader.readBoolean();
     const chroma_format_value = reader.readBits(2);
     
     const sample_precision = reader.readBits(3);
@@ -172,9 +172,9 @@ export function parseAVS2VideoDescriptor(payload: Uint8Array): ParsedAVS2VideoDe
         generation_name: 'AVS2',
         profile_name: AVS2Utils.getProfileName(profile_id),
         level_name: AVS2Utils.getLevelName(level_id),
-        multiple_frame_rate_flag: multiple_frame_rate_flag === 1,
+        multiple_frame_rate_flag,
         frame_rate: AVS2Utils.getFrameRate(frame_rate_code),
-        AVS_still_present: AVS_still_present === 1,
+        AVS_still_present,
         chroma_format: chroma_format_value as ChromaFormat,
         luma_bit_depth: bit_depth_info.luma_bit_depth,
         chroma_bit_depth: bit_depth_info.chroma_bit_depth,
@@ -219,15 +219,15 @@ export function parseAVS3VideoDescriptor(payload: Uint8Array): ParsedAVS3VideoDe
     const profile_id = reader.readBits(8);
     const level_id = reader.readBits(8);
     
-    const multiple_frame_rate_flag = reader.readBits(1);
+    const multiple_frame_rate_flag = reader.readBoolean();
     const frame_rate_code = reader.readBits(4);
     const sample_precision = reader.readBits(3);
     const chroma_format_value = reader.readBits(2);
     
-    const temporal_id_flag = reader.readBits(1);
-    const td_mode_flag = reader.readBits(1);
-    const library_stream_flag = reader.readBits(1);
-    const library_picture_enable_flag = reader.readBits(1);
+    const temporal_id_flag = reader.readBoolean();
+    const td_mode_flag = reader.readBoolean();
+    const library_stream_flag = reader.readBoolean();
+    const library_picture_enable_flag = reader.readBoolean();
     reader.skipBits(2); // reserved
 
     const colour_primaries = reader.readBits(8);
@@ -248,15 +248,15 @@ export function parseAVS3VideoDescriptor(payload: Uint8Array): ParsedAVS3VideoDe
         generation_name: 'AVS3',
         profile_name: AVS3Utils.getProfileName(profile_id),
         level_name: AVS3Utils.getLevelName(level_id),
-        multiple_frame_rate_flag: multiple_frame_rate_flag === 1,
+        multiple_frame_rate_flag,
         frame_rate: AVS3Utils.getFrameRate(frame_rate_code),
         chroma_format: chroma_format,
         luma_bit_depth: bit_depth_info.luma_bit_depth,
         chroma_bit_depth: bit_depth_info.chroma_bit_depth,
-        temporal_id_flag: temporal_id_flag === 1,
-        td_mode_flag: td_mode_flag === 1,
-        library_stream_flag: library_stream_flag === 1,
-        library_picture_enable_flag: library_picture_enable_flag === 1,
+        temporal_id_flag,
+        td_mode_flag,
+        library_stream_flag,
+        library_picture_enable_flag,
         colour_description: validated_primaries && validated_transfer && validated_matrix 
             ? getCombinedColorDescription(validated_primaries, validated_transfer, validated_matrix)
             : null,

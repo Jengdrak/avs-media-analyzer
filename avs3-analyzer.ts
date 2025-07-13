@@ -418,18 +418,18 @@ export class AVS3Analyzer {
             
             const profile_id = reader.readBits(8);
             const level_id = reader.readBits(8);
-            const progressive_sequence = reader.readBits(1) === 1;
-            const field_coded_sequence = reader.readBits(1) === 1;
-            const library_stream_flag = reader.readBits(1) === 1;
+            const progressive_sequence = reader.readBoolean();
+            const field_coded_sequence = reader.readBoolean();
+            const library_stream_flag = reader.readBoolean();
             
             let library_picture_enable_flag: boolean | undefined;
             let duplicate_sequence_header_flag: boolean | undefined;
             
             if (!library_stream_flag) {
-                library_picture_enable_flag = reader.readBits(1) === 1;
+                library_picture_enable_flag = reader.readBoolean();
                 
                 if (library_picture_enable_flag) {
-                    duplicate_sequence_header_flag = reader.readBits(1) === 1;
+                    duplicate_sequence_header_flag = reader.readBoolean();
                 }
             }
             
@@ -462,16 +462,16 @@ export class AVS3Analyzer {
             reader.checkMarkerBit();
             const bit_rate_upper = reader.readBits(12);
             
-            const low_delay = reader.readBits(1) === 1;
-            const temporal_id_enable_flag = reader.readBits(1) === 1;
+            const low_delay = reader.readBoolean();
+            const temporal_id_enable_flag = reader.readBoolean();
             
             reader.checkMarkerBit();
             const bbv_buffer_size = reader.readBits(18);
             reader.checkMarkerBit();
             const max_dpb = reader.readUE() + 1;
             
-            const rpl1_index_exist_flag = reader.readBits(1) === 1;
-            const rpl1_same_as_rpl0_flag = reader.readBits(1) === 1;
+            const rpl1_index_exist_flag = reader.readBoolean();
+            const rpl1_same_as_rpl0_flag = reader.readBoolean();
             
             reader.checkMarkerBit();
             const num_ref_pic_list_set_0 = reader.readUE();
@@ -499,13 +499,13 @@ export class AVS3Analyzer {
             
             reader.checkMarkerBit();
             
-            const weight_quant_enable_flag = reader.readBits(1) === 1;
+            const weight_quant_enable_flag = reader.readBoolean();
             
             let weight_quant_matrix_4x4: WeightQuantMatrix4x4 | undefined;
             let weight_quant_matrix_8x8: WeightQuantMatrix8x8 | undefined;
             
             if (weight_quant_enable_flag) {
-                const load_seq_weight_quant_data_flag = reader.readBits(1) === 1;
+                const load_seq_weight_quant_data_flag = reader.readBoolean();
                 
                 if (load_seq_weight_quant_data_flag) {
                     const { wqm4x4, wqm8x8 } = this.parseWeightQuantMatrix(reader);
@@ -519,24 +519,24 @@ export class AVS3Analyzer {
                 }
             }
             
-            const st_enable_flag = reader.readBits(1) === 1;
-            const sao_enable_flag = reader.readBits(1) === 1;
-            const alf_enable_flag = reader.readBits(1) === 1;
-            const affine_enable_flag = reader.readBits(1) === 1;
-            const smvd_enable_flag = reader.readBits(1) === 1;
-            const ipcm_enable_flag = reader.readBits(1) === 1;
-            const amvr_enable_flag = reader.readBits(1) === 1;
+            const st_enable_flag = reader.readBoolean();
+            const sao_enable_flag = reader.readBoolean();
+            const alf_enable_flag = reader.readBoolean();
+            const affine_enable_flag = reader.readBoolean();
+            const smvd_enable_flag = reader.readBoolean();
+            const ipcm_enable_flag = reader.readBoolean();
+            const amvr_enable_flag = reader.readBoolean();
             const num_of_hmvp_cand = reader.readBits(4);
-            const umve_enable_flag = reader.readBits(1) === 1;
+            const umve_enable_flag = reader.readBoolean();
             
             let emvr_enable_flag: boolean | undefined;
             
             if (num_of_hmvp_cand !== 0 && amvr_enable_flag) {
-                emvr_enable_flag = reader.readBits(1) === 1;
+                emvr_enable_flag = reader.readBoolean();
             }
             
-            const intra_pf_enable_flag = reader.readBits(1) === 1;
-            const tscpm_enable_flag = reader.readBits(1) === 1;
+            const intra_pf_enable_flag = reader.readBoolean();
+            const tscpm_enable_flag = reader.readBoolean();
             
             try {
                 reader.checkMarkerBit();
@@ -544,7 +544,7 @@ export class AVS3Analyzer {
                 console.log('Marker bit check failed');
             }
             
-            const dt_enable_flag = reader.readBits(1) === 1;
+            const dt_enable_flag = reader.readBoolean();
             
             let log2_max_dt_size: number | undefined;
             
@@ -552,7 +552,7 @@ export class AVS3Analyzer {
                 log2_max_dt_size = reader.readBits(2) + 4;
             }
             
-            const pbt_enable_flag = reader.readBits(1) === 1;
+            const pbt_enable_flag = reader.readBoolean();
             
             let eipm_enable_flag = false;
             let mipf_enable_flag = false;
@@ -592,14 +592,14 @@ export class AVS3Analyzer {
             if (profile_id === 0x30 || profile_id === 0x32) {
                 eipm_enable_flag = true;
                 
-                pmc_enable_flag = reader.readBits(1) === 1;
+                pmc_enable_flag = reader.readBoolean();
                 
                 if (tscpm_enable_flag) {
                     enhanced_tscpm_enable_flag = true;
                 }
                 
-                iip_enable_flag = reader.readBits(1) === 1;
-                sawp_enable_flag = reader.readBits(1) === 1;
+                iip_enable_flag = reader.readBoolean();
+                sawp_enable_flag = reader.readBoolean();
                 
                 mipf_enable_flag = true;
                 
@@ -616,53 +616,53 @@ export class AVS3Analyzer {
                 }
                 
                 if (affine_enable_flag) {
-                    asr_enable_flag = reader.readBits(1) === 1;
+                    asr_enable_flag = reader.readBoolean();
                 }
                 
-                awp_enable_flag = reader.readBits(1) === 1;
+                awp_enable_flag = reader.readBoolean();
                 
                 sb_tmvp_enable_flag = true;
                 
-                etmvp_mvap_enable_flag = reader.readBits(1) === 1;
-                dmvr_enable_flag = reader.readBits(1) === 1;
-                bio_enable_flag = reader.readBits(1) === 1;
-                bgc_enable_flag = reader.readBits(1) === 1;
-                inter_pf_enable_flag = reader.readBits(1) === 1;
-                inter_pc_enable_flag = reader.readBits(1) === 1;
-                obmc_enable_flag = reader.readBits(1) === 1;
+                etmvp_mvap_enable_flag = reader.readBoolean();
+                dmvr_enable_flag = reader.readBoolean();
+                bio_enable_flag = reader.readBoolean();
+                bgc_enable_flag = reader.readBoolean();
+                inter_pf_enable_flag = reader.readBoolean();
+                inter_pc_enable_flag = reader.readBoolean();
+                obmc_enable_flag = reader.readBoolean();
                 
                 if (st_enable_flag) {
                     enhanced_st_enable_flag = true;
                 }
                 
-                sbt_enable_flag = reader.readBits(1) === 1;
-                ist_enable_flag = reader.readBits(1) === 1;
+                sbt_enable_flag = reader.readBoolean();
+                ist_enable_flag = reader.readBoolean();
                 
                 srcc_enable_flag = true;
                 maec_enable_flag = true;
                 
-                esao_enable_flag = reader.readBits(1) === 1;
-                ccsao_enable_flag = reader.readBits(1) === 1;
+                esao_enable_flag = reader.readBoolean();
+                ccsao_enable_flag = reader.readBoolean();
                 
                 if (esao_enable_flag) {
                     // SaoEnableFlag = 0 (logic variable, not read from bitstream)
                 }
                 
                 if (alf_enable_flag) {
-                    ealf_enable_flag = reader.readBits(1) === 1;
+                    ealf_enable_flag = reader.readBoolean();
                 }
                 
-                ibc_enable_flag = reader.readBits(1) === 1;
+                ibc_enable_flag = reader.readBoolean();
                 
                 reader.checkMarkerBit();
                 
-                isc_enable_flag = reader.readBits(1) === 1;
+                isc_enable_flag = reader.readBoolean();
                 
                 if (ibc_enable_flag || isc_enable_flag) {
                     num_of_intra_hmvp_cand = reader.readBits(4);
                 }
                 
-                fimc_enable_flag = reader.readBits(1) === 1;
+                fimc_enable_flag = reader.readBoolean();
                 nn_tools_set_hook = reader.readBits(8);
                 
                 const nn_filter_enable_flag = (nn_tools_set_hook & 0x01) === 1;
@@ -680,16 +680,16 @@ export class AVS3Analyzer {
                 output_reorder_delay = reader.readBits(5);
             }
             
-            const cross_patch_loop_filter_enable_flag = reader.readBits(1) === 1;
-            const ref_colocated_patch_flag = reader.readBits(1) === 1;
-            const stable_patch_flag = reader.readBits(1) === 1;
+            const cross_patch_loop_filter_enable_flag = reader.readBoolean();
+            const ref_colocated_patch_flag = reader.readBoolean();
+            const stable_patch_flag = reader.readBoolean();
             
             let uniform_patch_flag: boolean | undefined;
             let patch_width: number | undefined;
             let patch_height: number | undefined;
             
             if (stable_patch_flag) {
-                uniform_patch_flag = reader.readBits(1) === 1;
+                uniform_patch_flag = reader.readBoolean();
                 
                 if (uniform_patch_flag) {
                     reader.checkMarkerBit();
@@ -870,7 +870,7 @@ export class AVS3Analyzer {
      * }
      */
     private parseReferencePictureListSet(reader: BitReader, library_picture_enable_flag?: boolean): ReferencePictureListSet {
-        const reference_to_library_enable_flag = library_picture_enable_flag && reader.readBits(1) === 1;
+        const reference_to_library_enable_flag = library_picture_enable_flag && reader.readBoolean();
         const num_of_ref_pic = reader.readUE();
         
         const library_index_flag: boolean[] = [];
@@ -878,14 +878,14 @@ export class AVS3Analyzer {
         const delta_doi: number[] = [];
         
         for (let i = 0; i < num_of_ref_pic; i++) {
-            library_index_flag[i] = reference_to_library_enable_flag && reader.readBits(1) === 1;
+            library_index_flag[i] = reference_to_library_enable_flag && reader.readBoolean();
             
             if (library_index_flag[i]) {
                 referenced_library_picture_index[i] = reader.readUE();
             } else {
                 let delta = reader.readUE();
                 if (delta > 0) {
-                    const sign = reader.readBits(1) === 1;
+                    const sign = reader.readBoolean();
                     if(sign) {
                         delta = -delta;
                     }
@@ -933,7 +933,7 @@ export class AVS3Analyzer {
 
             const video_format = reader.readBits(3);
             const sample_range = reader.readBits(1);
-            const colour_description_flag = reader.readBits(1) === 1;
+            const colour_description_flag = reader.readBoolean();
 
             let colour_primaries: number | undefined;
             let transfer_characteristics: number | undefined;
@@ -949,13 +949,13 @@ export class AVS3Analyzer {
             reader.checkMarkerBit();
             const display_vertical_size = reader.readBits(14);
 
-            const td_mode_flag = reader.readBits(1) === 1;
+            const td_mode_flag = reader.readBoolean();
             let td_packing_mode: number | undefined;
             let view_reverse_flag: boolean | undefined;
 
             if (td_mode_flag) {
                 td_packing_mode = reader.readBits(8);
-                view_reverse_flag = reader.readBits(1) === 1;
+                view_reverse_flag = reader.readBoolean();
             }
 
             // Validate and normalize color values if present

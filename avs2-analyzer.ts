@@ -306,8 +306,8 @@ export class AVS2Analyzer {
             reader.skipBits(32); // Skip video_sequence_start_code
             const profile_id = reader.readBits(8);
             const level_id = reader.readBits(8);
-            const progressive_sequence = reader.readBits(1) === 1;
-            const field_coded_sequence = reader.readBits(1) === 1;
+            const progressive_sequence = reader.readBoolean();
+            const field_coded_sequence = reader.readBoolean();
             const horizontal_size = reader.readBits(14);
             const vertical_size = reader.readBits(14);
             const chroma_format_value = reader.readBits(2);
@@ -329,17 +329,17 @@ export class AVS2Analyzer {
             const bit_rate_lower = reader.readBits(18);
             reader.checkMarkerBit();
             const bit_rate_upper = reader.readBits(12);
-            const low_delay = reader.readBits(1) === 1;
+            const low_delay = reader.readBoolean();
             reader.checkMarkerBit();
-            const temporal_id_enable_flag = reader.readBits(1) === 1;
+            const temporal_id_enable_flag = reader.readBoolean();
             const bbv_buffer_size = reader.readBits(18);
             const lcu_size = reader.readBits(3);
-            const weight_quant_enable_flag = reader.readBits(1) === 1;
+            const weight_quant_enable_flag = reader.readBoolean();
 
             let weight_quant_matrix_4x4: WeightQuantMatrix4x4 | undefined;
             let weight_quant_matrix_8x8: WeightQuantMatrix8x8 | undefined;
             if (weight_quant_enable_flag) {
-                const load_seq_weight_quant_data_flag = reader.readBits(1) === 1;
+                const load_seq_weight_quant_data_flag = reader.readBoolean();
                 if (load_seq_weight_quant_data_flag) {
                     const { wqm4x4, wqm8x8 } = this.parseWeightQuantMatrix(reader);
                     weight_quant_matrix_4x4 = wqm4x4;
@@ -352,17 +352,17 @@ export class AVS2Analyzer {
                 }
             }
 
-            const scene_picture_disable_flag = reader.readBits(1) === 1;
-            const multi_hypothesis_skip_enable_flag = reader.readBits(1) === 1;
-            const dual_hypothesis_prediction_enable_flag = reader.readBits(1) === 1;
-            const weighted_skip_enable_flag = reader.readBits(1) === 1;
-            const asymmetric_motion_partitions_enable_flag = reader.readBits(1) === 1;
-            const nonsquare_quadtree_transform_enable_flag = reader.readBits(1) === 1;
-            const nonsquare_intra_prediction_enable_flag = reader.readBits(1) === 1;
-            const secondary_transform_enable_flag = reader.readBits(1) === 1;
-            const sample_adaptive_offset_enable_flag = reader.readBits(1) === 1;
-            const adaptive_leveling_filter_enable_flag = reader.readBits(1) === 1;
-            const pmvr_enable_flag = reader.readBits(1) === 1;
+            const scene_picture_disable_flag = reader.readBoolean();
+            const multi_hypothesis_skip_enable_flag = reader.readBoolean();
+            const dual_hypothesis_prediction_enable_flag = reader.readBoolean();
+            const weighted_skip_enable_flag = reader.readBoolean();
+            const asymmetric_motion_partitions_enable_flag = reader.readBoolean();
+            const nonsquare_quadtree_transform_enable_flag = reader.readBoolean();
+            const nonsquare_intra_prediction_enable_flag = reader.readBoolean();
+            const secondary_transform_enable_flag = reader.readBoolean();
+            const sample_adaptive_offset_enable_flag = reader.readBoolean();
+            const adaptive_leveling_filter_enable_flag = reader.readBoolean();
+            const pmvr_enable_flag = reader.readBoolean();
             reader.checkMarkerBit();
             const num_of_rcs = reader.readBits(6);
 
@@ -373,11 +373,11 @@ export class AVS2Analyzer {
                 output_reorder_delay = reader.readBits(5);
             }
 
-            const cross_slice_loopfilter_enable_flag = reader.readBits(1) === 1;
+            const cross_slice_loopfilter_enable_flag = reader.readBoolean();
             
             let universal_string_prediction_enable_flag: boolean | undefined;
             if (chroma_format_value === 3) { // '11'
-                universal_string_prediction_enable_flag = reader.readBits(1) === 1;
+                universal_string_prediction_enable_flag = reader.readBoolean();
             }
 
             // --- AVS2-3D extensions (placeholders) ---
@@ -387,7 +387,7 @@ export class AVS2Analyzer {
             if (profile_id === 0x28 || profile_id === 0x2A || profile_id === 0x68 || profile_id === 0x6A) {
                 reader.checkMarkerBit();
                 number_of_views_minus1 = reader.readBits(5);
-                global_interview_motion_vector_enable_flag = reader.readBits(1) === 1;
+                global_interview_motion_vector_enable_flag = reader.readBoolean();
                 local_interview_motion_vector_range_minus1 = reader.readBits(3);
             }
 
@@ -400,8 +400,8 @@ export class AVS2Analyzer {
             let max_dv: number[] | undefined;
             let depth_ranges: DepthRange[] = [];
             if (profile_id === 0x68 || profile_id === 0x6A) {
-                const depth_coding_enable_flag = reader.readBits(1) === 1;
-                const camera_parameter_present_flag = reader.readBits(1) === 1;
+                const depth_coding_enable_flag = reader.readBoolean();
+                const camera_parameter_present_flag = reader.readBoolean();
                 if (camera_parameter_present_flag) {
                     const camera_parameter_change_flag = reader.readBits(1);
                     if (camera_parameter_change_flag === 0) {
@@ -409,7 +409,7 @@ export class AVS2Analyzer {
                     }
                 }
                 if (depth_coding_enable_flag) {
-                    const depth_range_change_flag = reader.readBits(1) === 1;
+                    const depth_range_change_flag = reader.readBoolean();
                     if (!depth_range_change_flag) {
                         depth_ranges = Array.from({length: numberOfViews}, () => this.parseDepthRange(reader));
                         min_dv = Array.from({length: numberOfViews - 1}, () => reader.readSE());
@@ -417,7 +417,7 @@ export class AVS2Analyzer {
                     }
                 }
                 if (depth_coding_enable_flag && global_interview_motion_vector_enable_flag) {
-                    depth_gdv_from_texture_enable_flag = reader.readBits(1) === 1;
+                    depth_gdv_from_texture_enable_flag = reader.readBoolean();
                 }
             }
             
@@ -425,9 +425,9 @@ export class AVS2Analyzer {
             let bcbr_constrained_update_enable_flag: boolean | undefined;
 
             if ((profile_id === 0x30 || profile_id === 0x32) && !scene_picture_disable_flag) {
-                const scene_picture_block_update_enable_flag = reader.readBits(1) === 1;
+                const scene_picture_block_update_enable_flag = reader.readBoolean();
                 if (scene_picture_block_update_enable_flag) {
-                    bcbr_constrained_update_enable_flag = reader.readBits(1) === 1;
+                    bcbr_constrained_update_enable_flag = reader.readBoolean();
                 }
                 reader.skipBits(1); // reserved_bits r(1)
             } else {
@@ -578,12 +578,12 @@ export class AVS2Analyzer {
             reader.checkMarkerBit();
             const display_vertical_size = reader.readBits(14);
 
-            const td_mode_flag = reader.readBits(1) === 1;
+            const td_mode_flag = reader.readBoolean();
             let td_packing_mode: number | undefined;
             let view_reverse_flag: boolean | undefined;
             if (td_mode_flag) {
                 td_packing_mode = reader.readBits(8);
-                view_reverse_flag = reader.readBits(1) === 1;
+                view_reverse_flag = reader.readBoolean();
             }
 
             const packing_mode = td_mode_flag ? td_packing_mode <= 4 ? td_packing_mode as PackingMode : PackingMode.RESERVED : PackingMode.MONO;

@@ -119,4 +119,11 @@ export class BitReader {
 
         return isPositive ? value : -value;
     }
+
+    /**
+     * Reads a single bit and returns it as a boolean value.
+     */
+    public readBoolean(): boolean {
+        return this.readBit() === 1;
+    }
 } 
