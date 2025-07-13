@@ -4,9 +4,13 @@
   "description": "TS传输流自研标准分析器",
   "main": "index.html",
   "scripts": {
-    "start": "python -m http.server 8080",
-    "serve": "npx serve .",
-    "dev": "npx live-server ."
+    "dev": "live-server .",
+    "build": "tsc",
+    "clean": "node -e \"const fs=require('fs'); ['dist','deploy'].forEach(d=>{if(fs.existsSync(d))fs.rmSync(d,{recursive:true,force:true}); console.log('🗑️ 已删除:',d)})\"",
+    "prepare:deploy": "node -e \"const fs=require('fs'),path=require('path'); const deployDir='deploy'; if(fs.existsSync(deployDir))fs.rmSync(deployDir,{recursive:true,force:true}); fs.mkdirSync(deployDir,{recursive:true}); ['index.html','style.css'].forEach(f=>{if(fs.existsSync(f)){fs.copyFileSync(f,path.join(deployDir,f));}else{console.warn('⚠️ 文件不存在:',f)}}); if(fs.existsSync('dist')){fs.mkdirSync(path.join(deployDir,'dist'),{recursive:true}); const jsFiles=fs.readdirSync('dist').filter(f=>f.endsWith('.js')); jsFiles.forEach(f=>{fs.copyFileSync(path.join('dist',f),path.join(deployDir,'dist',f));});}else{console.warn('⚠️ dist目录不存在，请先运行 npm run build')}; console.log('🎉 部署文件准备完成!')\"",
+    "build:local": "npm run build && npm run prepare:deploy",
+    "preview": "npm run build:local && serve deploy",
+    "serve": "serve ."
   },
   "keywords": [
     "mpeg",
@@ -16,7 +20,11 @@
     "audio",
     "codec",
     "analysis",
-    "parser"
+    "parser",
+    "avs",
+    "avs2", 
+    "avs3",
+    "audio-vivid"
   ],
   "author": "TS-Analyzer Team",
   "license": "MIT",
@@ -27,13 +35,16 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yourusername/ts-analyzer.git"
+    "url": "git+https://github.com/Jengdrak/ts-avs-analyzer.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/ts-analyzer/issues"
+    "url": "https://github.com/Jengdrak/ts-avs-analyzer/issues"
   },
-  "homepage": "https://github.com/yourusername/ts-analyzer#readme",
+  "homepage": "https://github.com/Jengdrak/ts-avs-analyzer#readme",
   "dependencies": {
     "html-inline": "^1.2.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
   }
 }

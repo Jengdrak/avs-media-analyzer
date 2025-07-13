@@ -1,3 +1,4 @@
+
 {
   "compilerOptions": {
     "target": "ES2018",
@@ -9,12 +10,17 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "allowJs": true,
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "declaration": false,
+    "removeComments": true,
+    "sourceMap": false
   },
   "include": [
     "./*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "dist",
+    "deploy"
   ]
-} 
+}

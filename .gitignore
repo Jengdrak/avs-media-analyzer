@@ -3,6 +3,7 @@
 
 # Ignore build output directory
 dist/
+deploy/
 
 # Ignore VSCode counter directory
 .VSCodeCounter/
