@@ -27,9 +27,6 @@ interface StreamInfo {
     avsDescriptor?: AVSVideoDescriptor | AVSAudioDescriptor; // AVS视频描述符
 }
 
-
-
-
 interface ProgramInfo {
     pmtPid: number;
     streams: Map<number, StreamInfo>;
@@ -64,6 +61,7 @@ class TSAnalyzer {
     private unparsedPmtPids: Set<number> = new Set();
     private allPmtsParsed: boolean = false;
     private pmtPids: Set<number> = new Set();
+    private initializingPromises: Map<number, Promise<void>> = new Map(); // 维护每个streamType的初始化Promise
 
     constructor() {
         this.initializeEventListeners();
@@ -293,6 +291,12 @@ class TSAnalyzer {
                 }
             }
 
+            // 优化：当所有PMT都已解析且没有待检测的AVS流时，提前退出
+            if (this.allPmtsParsed && this.detectionPids.size === 0) {
+                console.log(`🚀 解析优化: 所有PMT已解析且无待检测AVS流，提前退出循环 (处理了 ${processedPackets} 个包)`);
+                break;
+            }
+
             // 更频繁地更新进度，不再有延时
             if (processedPackets % 1000 === 0) {
                 this.updateProgress((processedPackets / totalPackets) * 100);
@@ -308,55 +312,11 @@ class TSAnalyzer {
         // 输出解析统计信息
         console.log(`📊 解析统计: PAT表遇到${this.patCount}次, PMT表遇到${this.pmtCount}次, 发现${this.programs.size}个程序, ${this.streams.size}个流`);
 
-        // 初始化AVS分析器（如果需要）
-        const hasStreamType = (type: number) => {
-            for (const stream of this.streams.values()) {
-                if (stream.streamType === type) return true;
-            }
-            return false;
-        };
-
-        if (hasStreamType(0x42) && !this.avsAnalyzer) {
-            try {
-                const avsModule = await import('./avs-analyzer.js');
-                this.avsAnalyzer = new avsModule.AVS1Analyzer();
-                console.log('AVS1分析器已初始化');
-            } catch (error) {
-                console.error('AVS1分析器初始化失败:', error);
-            }
-        }
-
-        if (hasStreamType(0xD2) && !this.avs2Analyzer) {
-            try {
-                const avs2Module = await import('./avs2-analyzer.js');
-                this.avs2Analyzer = new avs2Module.AVS2Analyzer();
-                console.log('AVS2分析器已初始化');
-            } catch (error) {
-                console.error('AVS2分析器初始化失败:', error);
-            }
-        }
-
-        if (hasStreamType(0xD4) && !this.avs3Analyzer) {
-            try {
-                const avs3Module = await import('./avs3-analyzer.js');
-                this.avs3Analyzer = new avs3Module.AVS3Analyzer();
-                console.log('AVS3分析器已初始化');
-            } catch (error) {
-                console.error('AVS3分析器初始化失败:', error);
-            }
-        }
-
-        if (hasStreamType(0xD5) && !this.av3aAnalyzer) {
-            try {
-                const av3aModule = await import('./av3a-analyzer.js');
-                this.av3aAnalyzer = new av3aModule.AV3AAnalyzer();
-                console.log('AV3A分析器已初始化');
-            } catch (error) {
-                console.error('AV3A分析器初始化失败:', error);
-            }
-        }
 
 
+        // 等待所有分析器初始化完成
+        await this.waitForAnalyzers();
+        
         // 完成PES包重组
         this.finalizePESReassembly();
 
@@ -446,40 +406,75 @@ class TSAnalyzer {
         }
     }
 
-    // 检测所有completedPES包
-    private detectAllCompletedPES(pid: number): void {
-        const state = this.pesReassembly.get(pid);
-        if (!state || state.completedPES.length === 0) {
+    // 初始化分析器（用于PMT解析时）
+    private initAnalyzerIfNeeded(streamType: number): void {
+        const analyzerMap = {
+            0x42: { prop: 'avsAnalyzer', module: './avs-analyzer.js', class: 'AVS1Analyzer', type: 'AVS' },
+            0xd2: { prop: 'avs2Analyzer', module: './avs2-analyzer.js', class: 'AVS2Analyzer', type: 'AVS2' },
+            0xd4: { prop: 'avs3Analyzer', module: './avs3-analyzer.js', class: 'AVS3Analyzer', type: 'AVS3' },
+            0xd5: { prop: 'av3aAnalyzer', module: './av3a-analyzer.js', class: 'AV3AAnalyzer', type: 'Audio Vivid' }
+        };
+
+        const config = analyzerMap[streamType as keyof typeof analyzerMap];
+        if (!config) return;
+
+        const analyzer = (this as any)[config.prop];
+        
+        // 如果分析器已存在，跳过
+        if (analyzer) {
             return;
         }
 
-        const stream = this.streams.get(pid);
-        if (!stream || !this.isAVSStream(stream.streamType)) {
+        // 如果正在初始化，跳过（避免重复）
+        if (this.initializingPromises.has(streamType)) {
             return;
         }
 
-        let analyzer: any = null;
-        let type: string = '';
+        // 开始初始化
+        const initPromise = import(config.module).then(module => {
+            (this as any)[config.prop] = new module[config.class]();
+            console.log(`⚡ ${config.type}分析器已初始化 (PMT时)`);
+        }).catch(error => {
+            console.error(`${config.type}分析器初始化失败:`, error);
+        }).finally(() => {
+            // 完成后从Map中移除
+            this.initializingPromises.delete(streamType);
+        });
 
-        if (stream.streamType === 0x42 && this.avsAnalyzer) {
-            analyzer = this.avsAnalyzer;
-            type = 'AVS';
-        } else if (stream.streamType === 0xd2 && this.avs2Analyzer) {
-            analyzer = this.avs2Analyzer;
-            type = 'AVS2';
-        } else if (stream.streamType === 0xd4 && this.avs3Analyzer) {
-            analyzer = this.avs3Analyzer;
-            type = 'AVS3';
-        } else if (stream.streamType === 0xd5 && this.av3aAnalyzer) {
-            analyzer = this.av3aAnalyzer;
-            type = 'Audio Vivid';
-        }
+        this.initializingPromises.set(streamType, initPromise);
+    }
 
-        // 如果分析器还未初始化，则跳过检测
-        if (!analyzer) {
+    // 获取已初始化的分析器
+    private getAnalyzer(streamType: number): { analyzer: any; type: string } | null {
+        const analyzerMap = {
+            0x42: { prop: 'avsAnalyzer', type: 'AVS' },
+            0xd2: { prop: 'avs2Analyzer', type: 'AVS2' },
+            0xd4: { prop: 'avs3Analyzer', type: 'AVS3' },
+            0xd5: { prop: 'av3aAnalyzer', type: 'Audio Vivid' }
+        };
+
+        const config = analyzerMap[streamType as keyof typeof analyzerMap];
+        if (!config) return null;
+
+        const analyzer = (this as any)[config.prop];
+        if (!analyzer) return null;
+
+        return { analyzer, type: config.type };
+    }
+
+    // 等待所有分析器初始化完成
+    private async waitForAnalyzers(): Promise<void> {
+        if (this.initializingPromises.size === 0) {
             return;
         }
+        
+        console.log(`⏳ 等待 ${this.initializingPromises.size} 个分析器初始化完成...`);
+        await Promise.all(this.initializingPromises.values());
+        console.log(`✅ 所有分析器初始化完成`);
+    }
 
+    // 执行AVS检测的核心逻辑
+    private performAVSDetection(pid: number, state: PESReassemblyState, analyzer: any, type: string): void {
         try {
             // 遍历检测所有已完成的PES包
             for (const completedPES of state.completedPES) {
@@ -506,6 +501,29 @@ class TSAnalyzer {
             // 无论检测是否成功，都清空completedPES数组释放内存
             state.completedPES.splice(0);
         }
+    }
+
+    // 检测所有completedPES包
+    private detectAllCompletedPES(pid: number): void {
+        // 1. 基础检查
+        const state = this.pesReassembly.get(pid);
+        if (!state || state.completedPES.length === 0) {
+            return;
+        }
+
+        const stream = this.streams.get(pid);
+        if (!stream || !this.isAVSStream(stream.streamType)) {
+            return;
+        }
+
+        // 2. 获取已初始化的分析器
+        const result = this.getAnalyzer(stream.streamType);
+        if (!result) {
+            return; // 分析器未初始化，跳过检测
+        }
+
+        // 3. 直接执行检测
+        this.performAVSDetection(pid, state, result.analyzer, result.type);
     }
 
     // 完成PES包重组
@@ -779,10 +797,13 @@ class TSAnalyzer {
                 this.parseDescriptors(descriptorData, streamInfo);
             }
 
-            // 如果是AVS流，加入待检测列表
+            // 如果是AVS流，加入待检测列表并立即初始化分析器
             if (this.isAVSStream(streamType)) {
                 this.detectionPids.add(elemPid);
                 console.log(`🎯 添加AVS流到待检测列表: PID 0x${elemPid.toString(16).toUpperCase().padStart(4, '0')}, 类型: 0x${streamType.toString(16)}`);
+                
+                // 立即初始化对应的分析器
+                this.initAnalyzerIfNeeded(streamType);
             }
 
             this.streams.set(elemPid, streamInfo);
@@ -1142,6 +1163,7 @@ class TSAnalyzer {
         this.pesReassembly.clear();
         this.detectionPids.clear();
         this.detectionResults.clear();
+        this.initializingPromises.clear();
         this.packetCount = 0;
         this.actualProcessedPackets = undefined;
         this.isPartialParse = false;
