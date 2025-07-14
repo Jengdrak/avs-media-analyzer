@@ -267,7 +267,7 @@ export function AVSAudioDescriptorToDisplayItems(descriptor: AVSAudioDescriptor)
 const MAX_LABEL_LENGTH = (() => {
     const allLabels = [
         // Video labels
-        'ID in the original source medium',
+        'ID',
         'Format',
         'Format standard',
         'Format profile',
@@ -301,8 +301,8 @@ const MAX_LABEL_LENGTH = (() => {
 export function AVSVideoInfoToCopyFormat(details: AVSVideoInfo, pid: number): string {
     const items: { label: string; value: string }[] = [];
         
-    // ID in the original source medium: 十进制(16进制)
-    items.push({ label: 'ID in the original source medium', value: `${pid} (0x${pid.toString(16).toUpperCase().padStart(4, '0')})` });
+    // ID: 十进制(16进制)
+    items.push({ label: 'ID', value: `${pid} (0x${pid.toString(16).toUpperCase().padStart(4, '0')})` });
 
     // 收集所有label-value对
     items.push({ label: 'Format', value: details.generation_name });
@@ -387,7 +387,7 @@ export function AVSVideoInfoToCopyFormat(details: AVSVideoInfo, pid: number): st
 export function AVSAudioInfoToCopyFormat(details: AVSAudioInfo, pid: number): string {
     const items: { label: string; value: string }[] = [];
     
-    items.push({ label: 'ID in the original source medium', value: `${pid} (0x${pid.toString(16).toUpperCase().padStart(4, '0')})` });
+    items.push({ label: 'ID', value: `${pid} (0x${pid.toString(16).toUpperCase().padStart(4, '0')})` });
     items.push({ label: 'Format', value: 'av3a' });
     items.push({ label: 'Format Standard', value: 'AVS3-P3' });
     items.push({ label: 'Commercial name', value: 'Audio Vivid' });
