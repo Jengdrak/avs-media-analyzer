@@ -263,6 +263,40 @@ export function AVSAudioDescriptorToDisplayItems(descriptor: AVSAudioDescriptor)
     return items;
 }
 
+// 计算所有可能的label的最大长度，确保格式一致性
+const MAX_LABEL_LENGTH = (() => {
+    const allLabels = [
+        // Video labels
+        'ID in the original source medium',
+        'Format',
+        'Format standard',
+        'Format profile',
+        'HDR dynamic metatype',
+        'Bit rate',
+        'Width',
+        'Height',
+        'Sample aspect ratio',
+        'Display aspect ratio',
+        'Frame rate',
+        'Video format',
+        'Chroma format',
+        'Scan type',
+        'Bit depth',
+        'Colour primaries / Transfer characteristics / Matrix coefficients',
+        'Colour primaries',
+        'Transfer characteristics',
+        'Matrix coefficients',
+        // Audio labels
+        'Format Standard',
+        'Commercial name',
+        'Channel(s)',
+        'Channel layout',
+        'Sampling frequency'
+    ];
+    
+    return Math.max(...allLabels.map(label => label.length));
+})();
+
 // Helper: Convert AVSVideoInfo to copy-friendly format
 export function AVSVideoInfoToCopyFormat(details: AVSVideoInfo, pid: number): string {
     const items: { label: string; value: string }[] = [];
@@ -305,35 +339,25 @@ export function AVSVideoInfoToCopyFormat(details: AVSVideoInfo, pid: number): st
         items.push({ label: 'HDR dynamic metatype', value: getHDRDynamicMetadataTypeName(details.hdr_dynamic_metadata_type) });
     }
     
-    // Bit rate: 同display
     items.push({ label: 'Bit rate', value: formatBitRate(details.bit_rate) });
-    
-    // Width: 格式是 1 920 pixels
     items.push({ label: 'Width', value: `${details.horizontal_size.toLocaleString()} pixels` });
-    
-    // Height: 格式是 1 920 pixels
     items.push({ label: 'Height', value: `${details.vertical_size.toLocaleString()} pixels` });
-    
-    // Sample aspect ratio
     if (details.sample_aspect_ratio) {
         items.push({ label: 'Sample aspect ratio', value: details.sample_aspect_ratio });
     }
-    
-    // Display aspect ratio: 同display
     if (details.display_aspect_ratio) {
         items.push({ label: 'Display aspect ratio', value: details.display_aspect_ratio });
     }
-    
-    // Frame rate: XXXX FPS
     items.push({ label: 'Frame rate', value: `${details.frame_rate} FPS` });
     
-    // Chroma format: 同display
+    if (details.video_format) {
+        const match = details.video_format.match(/\(([^)]+)\)/);
+        const videoFormatValue = match ? match[1] : details.video_format;
+        items.push({ label: 'Video format', value: videoFormatValue });
+    }
+    
     items.push({ label: 'Chroma format', value: getChromaFormatName(details.chroma_format) });
-    
-    // Scan type: 用英文
     items.push({ label: 'Scan type', value: details.progressive ? 'Progressive' : 'Interlaced' });
-    
-    // Bit depth: 8 bits这样子
     items.push({ label: 'Bit depth', value: `${details.luma_bit_depth} bits` });
     
     // Colour primaries, Transfer characteristics, Matrix coefficients
@@ -355,11 +379,7 @@ export function AVSVideoInfoToCopyFormat(details: AVSVideoInfo, pid: number): st
         }
     }
     
-    // 计算最长label长度用于对齐
-    const maxLabelLength = Math.max(...items.map(item => item.label.length));
-    
-    // 格式化为最终字符串
-    const lines = items.map(item => `${item.label.padEnd(maxLabelLength)}: ${item.value}`);
+    const lines = items.map(item => `${item.label.padEnd(MAX_LABEL_LENGTH)}: ${item.value}`);
     
     return lines.join('\n');
 } 
@@ -388,8 +408,7 @@ export function AVSAudioInfoToCopyFormat(details: AVSAudioInfo, pid: number): st
     items.push({ label: 'Sampling frequency', value: formatSamplingFrequency(details.sampling_frequency) });
     items.push({ label: 'Bit depth', value: `${details.resolution} bits` });
     
-    const maxLabelLength = Math.max(...items.map(item => item.label.length));
-    const lines = items.map(item => `${item.label.padEnd(maxLabelLength)}: ${item.value}`);
+    const lines = items.map(item => `${item.label.padEnd(MAX_LABEL_LENGTH)}: ${item.value}`);
     
     return lines.join('\n');
 }

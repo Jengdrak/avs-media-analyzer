@@ -226,8 +226,8 @@ export function getMatrixCoefficientsName(coefficients: MatrixCoefficients | num
         case MatrixCoefficients.BT470_2_SYSTEM_BG: return 'BT.470-2 System B/G';
         case MatrixCoefficients.SMPTE170M: return 'SMPTE 170M';
         case MatrixCoefficients.SMPTE240M: return 'SMPTE 240M';
-        case MatrixCoefficients.BT2020_NCL: return 'BT.2020 NCL';
-        case MatrixCoefficients.BT2020_CL: return 'BT.2020 CL';
+        case MatrixCoefficients.BT2020_NCL: return 'BT.2020 non-constant';
+        case MatrixCoefficients.BT2020_CL: return 'BT.2020 constant';
         case MatrixCoefficients.YR_EQUAL: return 'E_Y = E_R';
         case MatrixCoefficients.AVS2_APPENDIX_G3: return 'AVS2 Appendix G.3';
         default: return 'Unknown Matrix Coefficients';
