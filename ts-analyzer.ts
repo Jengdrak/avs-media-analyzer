@@ -25,6 +25,7 @@ interface StreamInfo {
     description: string[];
     avsDetails?: AVSVideoInfo | AVSAudioInfo; // AVS原始详情
     avsDescriptor?: AVSVideoDescriptor | AVSAudioDescriptor; // AVS视频描述符
+    registrationDescriptor?: string; // Registration descriptor fourCC
 }
 
 interface ProgramInfo {
@@ -628,17 +629,17 @@ class TSAnalyzer {
         return streamType === 0xd5;
     }
 
-    // 检查节目是否包含AVS3视频流
-    private hasAVS3Video(program: ProgramInfo): boolean {
+    // 检查节目是否包含AVSV视频流（可被mediainfo解析的AVS视频）
+    private hasAVSVVideo(program: ProgramInfo): boolean {
         return Array.from(program.streams.values()).some(stream => 
-            stream.streamType === 0xD4 && stream.avsDetails
+            stream.registrationDescriptor === 'AVSV' && stream.avsDetails && this.isAVSVideoStream(stream.streamType)
         );
     }
 
-    // 检查节目是否有非AVS3的可复制内容
-    private hasNonAVS3Content(program: ProgramInfo): boolean {
+    // 检查节目是否有非AVSV的可复制内容
+    private hasNonAVSVContent(program: ProgramInfo): boolean {
         return Array.from(program.streams.values()).some(stream => 
-            stream.avsDetails && stream.streamType !== 0xD4
+            stream.avsDetails && stream.registrationDescriptor !== 'AVSV'
         );
     }
 
@@ -855,6 +856,7 @@ class TSAnalyzer {
                             descriptorPayload[3]
                         );
                         streamInfo.description.push(fourCC);
+                        streamInfo.registrationDescriptor = fourCC;
                     }
                     break;
                 case 0x0A: // ISO 639 language descriptor
@@ -1221,11 +1223,11 @@ class TSAnalyzer {
         for (const [programNumber, program] of this.programs) {
             // 检查该节目是否有avsDetails
             const hasAvsDetails = Array.from(program.streams.values()).some(stream => stream.avsDetails);
-            const hasAVS3 = this.hasAVS3Video(program);
-            const hasNonAVS3 = this.hasNonAVS3Content(program);
+            const hasAVSV = this.hasAVSVVideo(program);
+            const hasNonAVSV = this.hasNonAVSVContent(program);
             
-            // 如果只有AVS3内容，按钮在AVS3未勾选时应该禁用
-            const shouldDisableWhenAVS3Unchecked = hasAVS3 && !hasNonAVS3;
+            // 如果只有AVSV内容，按钮在AVSV未勾选时应该禁用
+            const shouldDisableWhenAVSVUnchecked = hasAVSV && !hasNonAVSV;
             
             allHtml += `
                 <div class="streams-section">
@@ -1233,10 +1235,10 @@ class TSAnalyzer {
                         <h3>节目 ${programNumber} (PMT PID: 0x${program.pmtPid.toString(16).toUpperCase().padStart(4, '0')})</h3>
                         ${hasAvsDetails ? `
                             <div class="copy-buttons">
-                                <button class="copy-info-btn copy-text-btn ${shouldDisableWhenAVS3Unchecked ? 'conditionally-disabled' : ''}" 
+                                <button class="copy-info-btn copy-text-btn ${shouldDisableWhenAVSVUnchecked ? 'conditionally-disabled' : ''}" 
                                         onclick="copyProgramInfo(${programNumber})" 
                                         data-program="${programNumber}">Text 📋</button>
-                                <button class="copy-info-btn copy-bbcode-btn ${shouldDisableWhenAVS3Unchecked ? 'conditionally-disabled' : ''}" 
+                                <button class="copy-info-btn copy-bbcode-btn ${shouldDisableWhenAVSVUnchecked ? 'conditionally-disabled' : ''}" 
                                         onclick="copyProgramInfoBBCode(${programNumber})" 
                                         data-program="${programNumber}">BBCode 📋</button>
                                 <div class="copy-options">
@@ -1244,11 +1246,11 @@ class TSAnalyzer {
                                         <input type="checkbox" id="hiddenFormat_${programNumber}">
                                         <span>隐藏格式</span>
                                     </label>
-                                    ${hasAVS3 ? `
+                                    ${hasAVSV ? `
                                         <label class="option-checkbox">
-                                            <input type="checkbox" id="includeAVS3_${programNumber}" 
+                                            <input type="checkbox" id="includeAVSV_${programNumber}" 
                                                    onchange="updateButtonStates(${programNumber})">
-                                            <span>AVS3</span>
+                                            <span>AVSV</span>
                                         </label>
                                     ` : ''}
                                 </div>
@@ -1295,17 +1297,17 @@ class TSAnalyzer {
         const program = this.programs.get(programNumber);
         if (!program) return;
 
-        // 获取AVS3选项状态
-        const includeAVS3Checkbox = document.getElementById(`includeAVS3_${programNumber}`) as HTMLInputElement;
-        const includeAVS3 = includeAVS3Checkbox?.checked || false; // 默认为false
+        // 获取AVSV选项状态
+        const includeAVSVCheckbox = document.getElementById(`includeAVSV_${programNumber}`) as HTMLInputElement;
+        const includeAVSV = includeAVSVCheckbox?.checked || false; // 默认为false
 
         // 收集该节目中所有流的avsDetails信息
         const avsDetailsList: string[] = [];
         
         for (const [pid, stream] of program.streams) {
             if (stream.avsDetails) {
-                // 如果不包含AVS3且当前是AVS3视频流，则跳过
-                if (!includeAVS3 && stream.streamType === 0xD4) {
+                // 如果不包含AVSV且当前是AVSV视频流，则跳过
+                if (!includeAVSV && stream.registrationDescriptor === 'AVSV') {
                     continue;
                 }
 
@@ -1345,18 +1347,18 @@ class TSAnalyzer {
 
         // 获取选项状态
         const hiddenFormatCheckbox = document.getElementById(`hiddenFormat_${programNumber}`) as HTMLInputElement;
-        const includeAVS3Checkbox = document.getElementById(`includeAVS3_${programNumber}`) as HTMLInputElement;
+        const includeAVSVCheckbox = document.getElementById(`includeAVSV_${programNumber}`) as HTMLInputElement;
         
         const useHiddenFormat = hiddenFormatCheckbox?.checked || false;
-        const includeAVS3 = includeAVS3Checkbox?.checked || false; // 默认为false
+        const includeAVSV = includeAVSVCheckbox?.checked || false; // 默认为false
 
         // 收集该节目中所有流的avsDetails信息
         const avsDetailsList: string[] = [];
         
         for (const [pid, stream] of program.streams) {
             if (stream.avsDetails) {
-                // 如果不包含AVS3且当前是AVS3视频流，则跳过
-                if (!includeAVS3 && stream.streamType === 0xD4) {
+                // 如果不包含AVSV且当前是AVSV视频流，则跳过
+                if (!includeAVSV && stream.registrationDescriptor === 'AVSV') {
                     continue;
                 }
 
@@ -1399,18 +1401,18 @@ class TSAnalyzer {
         const program = this.programs.get(programNumber);
         if (!program) return;
 
-        const includeAVS3Checkbox = document.getElementById(`includeAVS3_${programNumber}`) as HTMLInputElement;
+        const includeAVSVCheckbox = document.getElementById(`includeAVSV_${programNumber}`) as HTMLInputElement;
         const textBtn = document.querySelector(`button[data-program="${programNumber}"].copy-text-btn`) as HTMLButtonElement;
         const bbcodeBtn = document.querySelector(`button[data-program="${programNumber}"].copy-bbcode-btn`) as HTMLButtonElement;
 
-        if (!includeAVS3Checkbox || !textBtn || !bbcodeBtn) return;
+        if (!includeAVSVCheckbox || !textBtn || !bbcodeBtn) return;
 
-        const hasAVS3 = this.hasAVS3Video(program);
-        const hasNonAVS3 = this.hasNonAVS3Content(program);
-        const includeAVS3 = includeAVS3Checkbox.checked;
+        const hasAVSV = this.hasAVSVVideo(program);
+        const hasNonAVSV = this.hasNonAVSVContent(program);
+        const includeAVSV = includeAVSVCheckbox.checked;
 
-        // 如果只有AVS3内容且AVS3未勾选，禁用按钮
-        const shouldDisable = hasAVS3 && !hasNonAVS3 && !includeAVS3;
+        // 如果只有AVSV内容且AVSV未勾选，禁用按钮
+        const shouldDisable = hasAVSV && !hasNonAVSV && !includeAVSV;
 
         if (shouldDisable) {
             // 移除初始状态类，添加禁用类
