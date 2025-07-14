@@ -25,7 +25,7 @@ interface StreamInfo {
     description: string[];
     avsDetails?: AVSVideoInfo | AVSAudioInfo; // AVS原始详情
     avsDescriptor?: AVSVideoDescriptor | AVSAudioDescriptor; // AVS视频描述符
-    registrationDescriptor?: string; // Registration descriptor fourCC
+    formatIdentifier?: string; // Registration descriptor fourCC
 }
 
 interface ProgramInfo {
@@ -632,14 +632,14 @@ class TSAnalyzer {
     // 检查节目是否包含AVSV视频流（可被mediainfo解析的AVS视频）
     private hasAVSVVideo(program: ProgramInfo): boolean {
         return Array.from(program.streams.values()).some(stream => 
-            stream.registrationDescriptor === 'AVSV' && stream.avsDetails && this.isAVSVideoStream(stream.streamType)
+            stream.formatIdentifier === 'AVSV' && stream.avsDetails && this.isAVSVideoStream(stream.streamType)
         );
     }
 
     // 检查节目是否有非AVSV的可复制内容
     private hasNonAVSVContent(program: ProgramInfo): boolean {
         return Array.from(program.streams.values()).some(stream => 
-            stream.avsDetails && stream.registrationDescriptor !== 'AVSV'
+            stream.avsDetails && stream.formatIdentifier !== 'AVSV'
         );
     }
 
@@ -855,8 +855,7 @@ class TSAnalyzer {
                             descriptorPayload[2],
                             descriptorPayload[3]
                         );
-                        streamInfo.description.push(fourCC);
-                        streamInfo.registrationDescriptor = fourCC;
+                        streamInfo.formatIdentifier = fourCC;
                     }
                     break;
                 case 0x0A: // ISO 639 language descriptor
@@ -1265,6 +1264,7 @@ class TSAnalyzer {
                                     <th>流类型</th>
                                     <th>编码格式</th>
                                     <th>语言</th>
+                                    <th>格式标识符</th>
                                     <th>描述</th>
                                 </tr>
                             </thead>
@@ -1307,7 +1307,7 @@ class TSAnalyzer {
         for (const [pid, stream] of program.streams) {
             if (stream.avsDetails) {
                 // 如果不包含AVSV且当前是AVSV视频流，则跳过
-                if (!includeAVSV && stream.registrationDescriptor === 'AVSV') {
+                if (!includeAVSV && stream.formatIdentifier === 'AVSV') {
                     continue;
                 }
 
@@ -1358,7 +1358,7 @@ class TSAnalyzer {
         for (const [pid, stream] of program.streams) {
             if (stream.avsDetails) {
                 // 如果不包含AVSV且当前是AVSV视频流，则跳过
-                if (!includeAVSV && stream.registrationDescriptor === 'AVSV') {
+                if (!includeAVSV && stream.formatIdentifier === 'AVSV') {
                     continue;
                 }
 
@@ -1463,7 +1463,7 @@ class TSAnalyzer {
     // 重构：只负责生成单个节目表格主体(tbody)的HTML
     private generateStreamRowsHtml(program: ProgramInfo): string {
         if (program.streams.size === 0) {
-            return '<tr><td colspan="5">该节目中未发现流。</td></tr>';
+            return '<tr><td colspan="6">该节目中未发现流。</td></tr>';
         }
 
         let tbodyHtml = '';
@@ -1483,6 +1483,7 @@ class TSAnalyzer {
                         </div>
                     </td>
                     <td>${stream.language || ''}</td>
+                    <td>${stream.formatIdentifier || ''}</td>
                     <td>
                         <div class="codec-info-container">
                             <div class="codec-info-text">
@@ -1497,7 +1498,7 @@ class TSAnalyzer {
             if (stream.avsDescriptor) {
                 tbodyHtml += `
                     <tr id="avs-desc-${pid}" class="avs-details-row" style="display: none;">
-                        <td colspan="5">
+                        <td colspan="6">
                             ${this.formatDetailsCard(stream.avsDescriptor, 'descriptor', stream.streamType)}
                         </td>
                     </tr>
@@ -1507,7 +1508,7 @@ class TSAnalyzer {
             if (stream.avsDetails) {
                 tbodyHtml += `
                     <tr id="avs-info-${pid}" class="avs-details-row" style="display: none;">
-                        <td colspan="5">
+                        <td colspan="6">
                             ${this.formatDetailsCard(stream.avsDetails, 'info', stream.streamType)}
                         </td>
                     </tr>
