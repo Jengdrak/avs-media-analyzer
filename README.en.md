@@ -1,6 +1,8 @@
 # TS-AVS Analyzer
 
-AVS/AVS2/AVS3/Audio Vivid metadata parser (TS format only)
+[简体中文](README.zh-Hans.md) | [English](README.en.md)
+
+AVS/AVS2/AVS3/Audio Vivid metadata parser (MPEG-2 Transport Stream (.ts/.m2ts) format files only)
 
 ## Online Usage
 
@@ -26,6 +28,6 @@ AVS/AVS2/AVS3/Audio Vivid metadata parser (TS format only)
 
 - `GY/T 363—2023` 3D audio coding and rendering
 
-### TS
+### MPEG-TS
 - `GB/T 20090.1-2012` Information technology - Advanced coding of audio and video - Part 1: System
 - `GY/T 299.1—2016` Technical requirements of ultra-high-definition video and audio encoding streams encapsulation for network transmission

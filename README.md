@@ -2,7 +2,7 @@
 
 [简体中文](README.zh-Hans.md) | [English](README.en.md)
 
-AVS/AVS2/AVS3/Audio Vivid元信息解析（仅限ts格式）
+AVS/AVS2/AVS3/Audio Vivid元信息解析（仅支持MPEG-2 Transport Stream（.ts/.m2ts）格式文件）
 
 ## 在线使用
 
@@ -28,6 +28,6 @@ AVS/AVS2/AVS3/Audio Vivid元信息解析（仅限ts格式）
 
 - `GY/T 363—2023` 三维声编解码及渲染
 
-### TS
+### MPEG-TS
 - `GB/T 20090.1-2012` 信息技术 先进音视频编码 第1部分：系统
 - `GY/T 299.1—2016` 超高清音视频编码码流网络传输封装技术要求
