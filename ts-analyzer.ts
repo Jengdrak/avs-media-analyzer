@@ -1031,7 +1031,7 @@ class TSAnalyzer {
             case 0x82: return { name: 'DTS', type: 'Audio' }; // Blu-ray
             case 0x83: return { name: 'TrueHD', type: 'Audio' }; // Blu-ray
             case 0x84: return { name: 'E-AC-3', type: 'Audio' }; // Blu-ray
-            case 0x85: return { name: 'DTS-HD', type: 'Audio' }; // Blu-ray
+            case 0x85: return { name: 'DTS-HD HRA', type: 'Audio' }; // Blu-ray
             case 0x86: return { name: 'DTS-HD MA', type: 'Audio' }; // Blu-ray
             case 0x87: return { name: 'E-AC-3', type: 'Audio' }; // Blu-ray
             case 0xA1: return { name: 'E-AC-3 (secondary)', type: 'Audio' }; // Blu-ray
@@ -1045,27 +1045,22 @@ class TSAnalyzer {
             case 0x12: return { name: 'Packed PES', type: 'Data' };
             case 0x90: return { name: 'PGS', type: 'Subtitle' }; // Blu-ray
             case 0x92: return { name: 'Text', type: 'Subtitle' }; // Blu-ray
-
+            
+            // 系统流
+            case 0x09: return { name: 'ITU-T Rec. H.222.1', type: 'System' };
             case 0x1C: return { name: 'MPEG-4 SL', type: 'System' };
             case 0x1D: return { name: 'MPEG-4 FlexMux', type: 'System' };
 
             // 数据流
             case 0x05: return { name: 'Private Section', type: 'Data' };
-            case 0x06: return { name: 'Private Data', type: 'Data' };
+            case 0x06: return { name: 'Private PES', type: 'Data' };
             case 0x13: return { name: 'DSM-CC', type: 'Data' };
             case 0x15: return { name: 'Metadata', type: 'Data' };
-            case 0x14: return { name: 'H.222.1 type A', type: 'Data' };
-            case 0x16: return { name: 'H.222.1 type B', type: 'Data' };
-            case 0x17: return { name: 'H.222.1 type C', type: 'Data' };
-            case 0x18: return { name: 'H.222.1 type D', type: 'Data' };
-            case 0x19: return { name: 'H.222.1 type E', type: 'Data' };
-            case 0x1A: return { name: 'Ancillary', type: 'Data' };
-            case 0x1F: return { name: 'IPMP', type: 'Data' };
+            case 0x0A: return { name: 'ISO/IEC 13818-6 type A', type: 'Data' };
+            case 0x0B: return { name: 'ISO/IEC 13818-6 type B', type: 'Data' };
+            case 0x0C: return { name: 'ISO/IEC 13818-6 type C', type: 'Data' };
+            case 0x0D: return { name: 'ISO/IEC 13818-6 type D', type: 'Data' };
 
-            // 私有流
-            case 0x88: return { name: 'Private Stream', type: 'Private' };
-            case 0x89: return { name: 'Private Stream', type: 'Private' };
-            case 0x8A: return { name: 'Private Stream', type: 'Private' };
 
             default: return { name: `Unknown (0x${streamType.toString(16).toUpperCase().padStart(2, '0')})`, type: 'Unknown' };
         }
