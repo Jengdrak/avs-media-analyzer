@@ -264,16 +264,16 @@ export class AVS2Analyzer {
          *     local_interview_motion_vector_range_minus1 u(3)
          *   }
          *   if(profile_id==0x68||profile_id==0x6A){
-         *     depth_coding_enable_flag u(1)
-         *     camera_parameter_present_flag u(1)
-         *     if(camera_parameter_present_flag){ u(1)
-         *       camera_parameter_change_flag
-         *       if(camera_parameter_change_flag==0){ u(1)
-         *         for(i=0;i<NumberViews;i++){
-         *           camera_parameter_set(i)
-         *         }
-         *       }
-         *     }
+         *     depth_coding_enable_flag u(1)                           // depth_coding_enable_flag u(1)
+         *     camera_parameter_present_flag u(1)                      // camera_parameter_present_flag u(1)
+         *     if(camera_parameter_present_flag){                      // if(camera_parameter_present_flag){
+         *       camera_parameter_change_flag u(1)                     //   camera_parameter_change_flag u(1)
+         *       if(camera_parameter_change_flag==0){                  //   if(camera_parameter_change_flag==0){
+         *         for(i=0;i<NumberViews;i++){                         //     for(i=0;i<NumberViews;i++){
+         *           camera_parameter_set(i)                           //       camera_parameter_set(i)
+         *         }                                                   //     }
+         *       }                                                     //   }
+         *     }                                                       // }
          *     if(DepthCodingEnableFlag){
          *       depth_range_change_flag u(1)
          *       if(DepthRangeChangeFlag==0){
@@ -403,8 +403,8 @@ export class AVS2Analyzer {
                 const depth_coding_enable_flag = reader.readBoolean();
                 const camera_parameter_present_flag = reader.readBoolean();
                 if (camera_parameter_present_flag) {
-                    const camera_parameter_change_flag = reader.readBits(1);
-                    if (camera_parameter_change_flag === 0) {
+                    const camera_parameter_change_flag = reader.readBoolean();
+                    if (camera_parameter_change_flag === false) {
                         camera_parameter_sets = Array.from({length: numberOfViews}, () => this.parseCameraParameterSet(reader));
                     }
                 }
