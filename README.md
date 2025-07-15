@@ -26,6 +26,7 @@ AVS/AVS2/AVS3/Audio Vivid元信息解析（仅支持MPEG-2 Transport Stream（.t
 
 ### Audio Vivid
 
+- `T/AI 109.3—2023` 信息技术 智能媒体编码 第3部分：沉浸式音频
 - `GY/T 363—2023` 三维声编解码及渲染
 
 ### MPEG-TS

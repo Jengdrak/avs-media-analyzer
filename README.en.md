@@ -21,11 +21,12 @@ AVS/AVS2/AVS3/Audio Vivid metadata parser (MPEG-2 Transport Stream (.ts/.m2ts) f
 
 ### AVS3
 
-- `T/AI 109.2—2021` Information technology Intelligent media coding part 2: Video
+- `T/AI 109.2—2021` Information technology Intelligent media coding Part 2: Video
 - `GY/T 368-2023` Advanced and efficient video coding
 
 ### Audio Vivid
 
+- `T/AI 109.3—2023` Information technology - Intelligent media coding - Part 3: Immersive audio
 - `GY/T 363—2023` 3D audio coding and rendering
 
 ### MPEG-TS
