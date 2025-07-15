@@ -22,6 +22,7 @@ import {
     CodingProfile,
     ChannelConfiguration,
     AudioCodecId,
+    BitstreamType,
     AV3AUtils
 } from './av3a-common.js';
 
@@ -59,9 +60,10 @@ export interface AVSAudioDescriptor {
     channel_number?: number;
     channel_configuration?: ChannelConfiguration;
     object_channel_number?: number;
-    order?: number;
+    hoa_order?: number;
     resolution: number;
     bit_rate?: number;
+    bitstream_type?: BitstreamType;
 }
 
 
@@ -103,16 +105,17 @@ export interface AVSVideoInfo {
 }
 
 export interface AVSAudioInfo {
-    audio_codec_id: number;
+    audio_codec_id: AudioCodecId;
     nn_type?: NeuralNetworkType;
     coding_profile: CodingProfile;
     sampling_frequency: number;
     channel_number?: number;
     channel_configuration?: ChannelConfiguration;
     object_channel_number?: number;
-    order?: number;
+    hoa_order?: number;
     resolution: number;
     bit_rate?: number;
+    bitstream_type?: BitstreamType;
 }
 
 // 格式化比特率
@@ -203,8 +206,8 @@ export function AVSAudioInfoToDisplayItems(details: AVSAudioInfo): { label: stri
     if (details.object_channel_number != null) {
         items.push({ label: '对象声道数', value: details.object_channel_number.toString() });
     }
-    if (details.order != null) {
-        items.push({ label: '阶数', value: details.order.toString() });
+    if (details.hoa_order != null) {
+        items.push({ label: '阶数', value: details.hoa_order.toString() });
     }
     items.push({ label: '采样率', value: formatSamplingFrequency(details.sampling_frequency) });
     items.push({ label: '位深度', value: `${details.resolution} bits` });
@@ -255,8 +258,8 @@ export function AVSAudioDescriptorToDisplayItems(descriptor: AVSAudioDescriptor)
     if (descriptor.object_channel_number != null) {
         items.push({ label: '对象声道数', value: descriptor.object_channel_number.toString() });
     }
-    if (descriptor.order != null) {
-        items.push({ label: '阶数', value: descriptor.order.toString() });
+    if (descriptor.hoa_order != null) {
+        items.push({ label: '阶数', value: descriptor.hoa_order.toString() });
     }
     items.push({ label: '采样率', value: formatSamplingFrequency(descriptor.sampling_frequency) });
     items.push({ label: '位深度', value: `${descriptor.resolution} bits` });

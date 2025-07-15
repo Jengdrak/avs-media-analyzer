@@ -322,9 +322,8 @@ export function parseAVS3AudioDescriptor(payload: Uint8Array): ParsedAVS3AudioDe
 
     const reader = new BitReader(payload);
 
-    const audio_codec_id_raw = reader.readBits(4);
-    const audio_codec_id = AV3AUtils.isValidAudioCodecId(audio_codec_id_raw) ? audio_codec_id_raw as AudioCodecId : AudioCodecId.GENERAL;
-    
+    const audio_codec_id = reader.readBits(4);
+
     const sampling_frequency_index = reader.readBits(4);
     let sampling_frequency = AV3AUtils.getSamplingFrequency(sampling_frequency_index);
 
@@ -336,7 +335,7 @@ export function parseAVS3AudioDescriptor(payload: Uint8Array): ParsedAVS3AudioDe
     let order: number | undefined;
     let bit_rate: number | undefined;
 
-    if (audio_codec_id == AudioCodecId.LOSSLESS) {
+    if (audio_codec_id == 1) {
         if (sampling_frequency_index == 0xf) {
             sampling_frequency = reader.readBits(24);
         }
@@ -347,7 +346,7 @@ export function parseAVS3AudioDescriptor(payload: Uint8Array): ParsedAVS3AudioDe
         channel_number = reader.readBits(8);
     }
 
-    if (audio_codec_id == AudioCodecId.GENERAL) {
+    if (audio_codec_id == 2) {
         const nn_type_raw = reader.readBits(3);
         nn_type = AV3AUtils.getNeuralNetworkType(nn_type_raw);
         reader.skipBits(1); // reserved
@@ -386,7 +385,7 @@ export function parseAVS3AudioDescriptor(payload: Uint8Array): ParsedAVS3AudioDe
     // for (i=0; i<N; i++) addition_info[i] 8 bslbf
 
     return {
-        audio_codec_id,
+        audio_codec_id: audio_codec_id as AudioCodecId,
         sampling_frequency,
         nn_type,
         coding_profile,

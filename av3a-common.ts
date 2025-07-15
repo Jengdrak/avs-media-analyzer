@@ -6,8 +6,9 @@
  * Audio codec ID enumeration
  */
 export enum AudioCodecId {
-    LOSSLESS = 1,
-    GENERAL = 2
+    GENERAL_HIGH_BITRATE = 0,  // 通用高码率音频编码数据
+    LOSSLESS = 1,              // 无损音频编码数据
+    GENERAL_FULL_BITRATE = 2   // 通用全码率音频编码数据
 }
 
 /**
@@ -48,13 +49,26 @@ export enum ChannelConfiguration {
 }
 
 /**
+ * Bitstream type enumeration (for audio_codec_id=0)
+ */
+export enum BitstreamType {
+    CONSTANT_BITRATE = 0,  // 匀速位流，可通过信道匀速传输
+    VARIABLE_BITRATE = 1   // 可变速位流，不适于匀速信道传输
+}
+
+/**
  * Sampling frequency mapping
  */
 const SAMPLING_FREQUENCIES: Record<number, number> = {
     0x0: 192000,
     0x1: 96000,
     0x2: 48000,
-    0x3: 44100
+    0x3: 44100,
+    0x4: 32000,
+    0x5: 24000,
+    0x6: 22050,
+    0x7: 16000,
+    0x8: 8000
 };
 
 /**
@@ -91,6 +105,7 @@ export class AV3AUtils {
      */
     static getResolution(value: number): number {
         switch (value) {
+            case 0: return 8;
             case 1: return 16;
             case 2: return 24;
             default: return 0;
@@ -119,10 +134,19 @@ export class AV3AUtils {
     }
 
     /**
+     * Get bitstream type from raw value
+     */
+    static getBitstreamType(value: number): BitstreamType {
+        return value === 0 ? BitstreamType.CONSTANT_BITRATE : BitstreamType.VARIABLE_BITRATE;
+    }
+
+    /**
      * Validate audio codec ID
      */
     static isValidAudioCodecId(codecId: number): boolean {
-        return codecId === AudioCodecId.LOSSLESS || codecId === AudioCodecId.GENERAL;
+        return codecId === AudioCodecId.GENERAL_HIGH_BITRATE || 
+               codecId === AudioCodecId.LOSSLESS || 
+               codecId === AudioCodecId.GENERAL_FULL_BITRATE;
     }
 
     /**
@@ -137,8 +161,9 @@ export class AV3AUtils {
      */
     static getAudioCodecIdName(codecId: AudioCodecId): string {
         switch (codecId) {
-            case AudioCodecId.LOSSLESS: return '无损';
-            case AudioCodecId.GENERAL: return '通用';
+            case AudioCodecId.GENERAL_HIGH_BITRATE: return '通用高码率音频编码数据';
+            case AudioCodecId.LOSSLESS: return '无损音频编码数据';
+            case AudioCodecId.GENERAL_FULL_BITRATE: return '通用全码率音频编码数据';
             default: return '未知';
         }
     }
@@ -209,4 +234,16 @@ export class AV3AUtils {
             default: return '保留';
         }
     }
+
+    /**
+     * Get bitstream type name in Chinese
+     */
+    static getBitstreamTypeName(type: BitstreamType): string {
+        switch (type) {
+            case BitstreamType.CONSTANT_BITRATE: return '匀速位流，可通过信道匀速传输';
+            case BitstreamType.VARIABLE_BITRATE: return '可变速位流，不适于匀速信道传输';
+            default: return '未知';
+        }
+    }
+
 }

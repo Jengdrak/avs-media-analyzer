@@ -8,6 +8,7 @@ import {
     NeuralNetworkType,
     CodingProfile,
     ChannelConfiguration,
+    BitstreamType,
     AV3AUtils
 } from './av3a-common.js';
 
@@ -45,9 +46,10 @@ type AV3AFrameHeader = {
     channel_number?: number;
     channel_configuration?: ChannelConfiguration;
     object_channel_number?: number;
-    order?: number;
+    hoa_order?: number;
     resolution: number;
     bit_rate?: number;
+    bitstream_type?: BitstreamType;
 }
 
 /**
@@ -113,6 +115,8 @@ export class AV3AAnalyzer {
      *         raw_frame_length 16 bslbf 
      *     } 
      *     aatf_error_check() 
+     *     if(audio_codec_id==0) 
+     *         channel_number_index 7 bslbf 
      *     if(audio_codec_id==1) 
      *         channel_number {4; 8} bslbf 
      *     if(audio_codec_id==2){ 
@@ -136,8 +140,11 @@ export class AV3AAnalyzer {
      *         } 
      *     } 
      *     resolution 2 uimsbf 
-     *     if(audio_codec_id==2 && coding_profile != 1){ 
+     *     if(audio_codec_id==0 || (audio_codec_id==2 && coding_profile != 1)){ 
      *         bitrate_index  4 uimsbf 
+     *     } 
+     *     if(audio_codec_id==0){ 
+     *         bitstream_type 1 bslbf 
      *     } 
      * }
      */
@@ -168,8 +175,15 @@ export class AV3AAnalyzer {
             let channel_number: number | undefined;
             let channel_configuration: ChannelConfiguration | undefined;
             let object_channel_number: number | undefined;
-            let order: number | undefined;
+            let hoa_order: number | undefined;
             let bit_rate: number | undefined;
+            let bitstream_type: BitstreamType | undefined;
+            
+            if (audio_codec_id == 0) {
+                const channel_number_index = reader.readBits(7);
+                channel_configuration = AV3AUtils.getChannelConfiguration(channel_number_index);
+                channel_number = AV3AUtils.getChannelCount(channel_configuration);
+            }
             
             if (audio_codec_id == 1) {
                 const channel_bits = reader.readBits(4);
@@ -211,22 +225,27 @@ export class AV3AAnalyzer {
                 }
                 
                 if (coding_profile == CodingProfile.FOA_HOA) {
-                    order = reader.readBits(4);
+                    hoa_order = reader.readBits(4) - 1;
                 }
             }
             
             const resolution_raw = reader.readBits(2);
             const resolution = AV3AUtils.getResolution(resolution_raw);
             
-            if (audio_codec_id == 2 && coding_profile != CodingProfile.OBJECT_METADATA) {
+            if (audio_codec_id == 0 || (audio_codec_id == 2 && coding_profile != CodingProfile.OBJECT_METADATA)) {
                 const bitrate_index = reader.readBits(4);
                 bit_rate = queryBitrate(channel_configuration, bitrate_index);
+            }
+            
+            if (audio_codec_id == 0) {
+                const bitstream_type_raw = reader.readBits(1);
+                bitstream_type = AV3AUtils.getBitstreamType(bitstream_type_raw);
             }
 
             bit_rate *= 1000;
             
             return {
-                audio_codec_id,
+                audio_codec_id: audio_codec_id as AudioCodecId,
                 nn_type,
                 coding_profile,
                 sampling_frequency,
@@ -234,9 +253,10 @@ export class AV3AAnalyzer {
                 channel_number,
                 channel_configuration,
                 object_channel_number,
-                order,
+                hoa_order,
                 resolution,
                 bit_rate,
+                bitstream_type,
             };
             
         } catch (error) {
@@ -251,12 +271,6 @@ export {
     AudioCodecId,
     NeuralNetworkType,
     CodingProfile,
-    ChannelConfiguration
+    ChannelConfiguration,
+    BitstreamType
 } from './av3a-common.js';
-
-// Re-export utility functions
-export const getAudioCodecIdName = AV3AUtils.getAudioCodecIdName;
-export const getNeuralNetworkTypeName = AV3AUtils.getNeuralNetworkTypeName;
-export const getCodingProfileName = AV3AUtils.getCodingProfileName;
-export const getChannelConfigurationNameEN = AV3AUtils.getChannelConfigurationNameEN;
-export const getChannelConfigurationNameZH = AV3AUtils.getChannelConfigurationNameZH;
