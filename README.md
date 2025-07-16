@@ -9,7 +9,7 @@ AVS/AVS2/AVS3/Audio Vivid元信息解析
 - **TS/M2TS格式** (.ts, .m2ts): 完整的AVS/AVS2/AVS3/Audio Vivid元信息解析
 - **通用媒体格式** (.mp4, .mov, .mkv, .webm, .flv, .m4v, .wmv, .avi): AV3A (Audio Vivid) 音频流检测和解析
 
-> 通用媒体格式的使用 [bilibili/web-demuxer](https://github.com/bilibili/web-demuxer) 提取码流
+> 通用媒体格式使用 [bilibili/web-demuxer](https://github.com/bilibili/web-demuxer) 提取码流
 
 ## 在线使用
 
