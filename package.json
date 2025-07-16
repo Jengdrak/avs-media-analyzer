@@ -1,5 +1,5 @@
 {
-  "name": "ts-avs-analyzer",
+  "name": "avs-media-analyzer",
   "version": "1.2.0",
   "description": "AVS自研标准分析器",
   "main": "index.html",
@@ -42,10 +42,9 @@
   },
   "homepage": "https://github.com/Jengdrak/avs-media-analyzer#readme",
   "dependencies": {
-    "@sylphlab/pdf-reader-mcp": "^0.3.23",
     "html-inline": "^1.2.0"
   },
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=20.0.0"
   }
 }
