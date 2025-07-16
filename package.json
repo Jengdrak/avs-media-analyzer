@@ -35,12 +35,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Jengdrak/ts-avs-analyzer.git"
+    "url": "git+https://github.com/Jengdrak/avs-media-analyzer.git"
   },
   "bugs": {
-    "url": "https://github.com/Jengdrak/ts-avs-analyzer/issues"
+    "url": "https://github.com/Jengdrak/avs-media-analyzer/issues"
   },
-  "homepage": "https://github.com/Jengdrak/ts-avs-analyzer#readme",
+  "homepage": "https://github.com/Jengdrak/avs-media-analyzer#readme",
   "dependencies": {
     "@sylphlab/pdf-reader-mcp": "^0.3.23",
     "html-inline": "^1.2.0"
