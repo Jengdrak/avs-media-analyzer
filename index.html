@@ -16,9 +16,9 @@
             <div class="upload-section">
                 <div class="upload-area" id="uploadArea">
                     <div class="upload-icon">📁</div>
-                    <p>点击选择或拖拽 TS 文件到此处</p>
+                    <p>点击选择或拖拽媒体文件到此处</p>
                 </div>
-                <input type="file" id="fileInput" accept=".ts,.m2ts" style="display: none;" />
+                <input type="file" id="fileInput" accept=".ts,.m2ts,.mp4,.mov,.mkv,.webm,.flv,.m4v,.wmv,.avi" style="display: none;" />
                 <div class="file-info" id="fileInfo" style="display: none;">
                     <span id="fileName"></span>
                     <span id="fileSize"></span>
@@ -58,7 +58,7 @@
 
         <footer>
             <button class="re-upload-btn" id="reUploadBtn" style="display: none;">重新上传文件</button>
-            <p>支持标准 MPEG-2 传输流 (.ts) 文件解析</p>
+            <p>支持 TS/M2TS 传输流及其他媒体格式解析</p>
             <div class="github-link">
                 <a href="https://github.com/jengdrak/ts-avs-analyzer" target="_blank" rel="noopener" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: #333; font-size: 16px; transition: all 0.2s; padding: 8px 12px; border-radius: 6px; background-color: rgba(255, 255, 255, 0.7); backdrop-filter: blur(5px);" onmouseover="this.style.color='#0366d6'; this.style.backgroundColor='rgba(255, 255, 255, 0.9)'; this.style.transform='scale(1.05)';" onmouseout="this.style.color='#333'; this.style.backgroundColor='rgba(255, 255, 255, 0.7)'; this.style.transform='scale(1)';">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -70,6 +70,6 @@
         </footer>
     </div>
 
-    <script type="module" src="dist/ts-analyzer.js"></script>
+    <script type="module" src="dist/main.js"></script>
 </body>
 </html> 

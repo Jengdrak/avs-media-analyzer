@@ -41,7 +41,7 @@ interface PESReassemblyState {
 }
 
 
-class TSAnalyzer {
+export class TSAnalyzer {
     private packetSize: number = 188;
     private syncByte: number = 0x47;
     private programs: Map<number, ProgramInfo> = new Map();
@@ -65,7 +65,7 @@ class TSAnalyzer {
     private initializingPromises: Map<number, Promise<void>> = new Map(); // 维护每个streamType的初始化Promise
 
     constructor() {
-        this.initializeEventListeners();
+        // 不自动初始化事件监听器，由外部控制
     }
 
     // 初始化事件监听器
@@ -107,12 +107,7 @@ class TSAnalyzer {
     }
 
     // 处理文件
-    private async handleFile(file: File): Promise<void> {
-        if (!file.name.toLowerCase().endsWith('.ts') && !file.name.toLowerCase().endsWith('.m2ts')) {
-            alert('请选择 .ts 或 .m2ts 文件');
-            return;
-        }
-
+    public async handleFile(file: File): Promise<void> {
         this.showFileInfo(file);
         this.showAnalysisSection();
 
@@ -1576,10 +1571,7 @@ class TSAnalyzer {
     }
 }
 
-// 等待DOM加载完成后初始化
-document.addEventListener('DOMContentLoaded', () => {
-    new TSAnalyzer();
-});
+// 移除自动初始化，由MediaAnalyzer控制
 
 // 全局函数：切换详情显示
 (window as any).toggleDetails = function(rowId: string) {
