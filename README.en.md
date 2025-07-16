@@ -13,7 +13,7 @@ AVS/AVS2/AVS3/Audio Vivid metadata parser
 
 ## Online Usage
 
-🔗 [https://jengdrak.github.io/ts-avs-analyzer/](https://jengdrak.github.io/ts-avs-analyzer/)
+🔗 [https://jengdrak.github.io/avs-media-analyzer/](https://jengdrak.github.io/avs-media-analyzer/)
 
 ## Reference Standards
 

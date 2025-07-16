@@ -13,7 +13,7 @@ AVS/AVS2/AVS3/Audio Vivid元信息解析
 
 ## 在线使用
 
-🔗 [https://jengdrak.github.io/ts-avs-analyzer/](https://jengdrak.github.io/ts-avs-analyzer/)
+🔗 [https://jengdrak.github.io/avs-media-analyzer/](https://jengdrak.github.io/avs-media-analyzer/)
 
 ## 参考标准
 
