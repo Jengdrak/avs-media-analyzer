@@ -200,6 +200,9 @@ export class GenericMediaAnalyzer {
 
         // 显示空的流信息
         this.displayStreams();
+        
+        // 将复制方法添加到全局作用域
+        (window as any).genericAnalyzer = this;
     }
 
     // 显示基本信息
@@ -235,10 +238,25 @@ export class GenericMediaAnalyzer {
         // 创建通用媒体文件的流信息显示
         const streamRows = this.generateStreamRows();
         
+        // 检查是否有 avsDetails（类似 ts-analyzer.ts 的 hasAvsDetails 逻辑）
+        const hasAvsDetails = Array.from(this.streams.values()).some(stream => stream.avsDetails);
+        
         streamsContainer.innerHTML = `
             <div class="streams-section">
                 <div class="program-header">
                     <h3>媒体流信息</h3>
+                    ${hasAvsDetails ? `
+                        <div class="copy-buttons">
+                            <button class="copy-info-btn copy-text-btn" onclick="window.genericAnalyzer.copyMediaInfo()">Text 📋</button>
+                            <button class="copy-info-btn copy-bbcode-btn" onclick="window.genericAnalyzer.copyMediaInfoBBCode()">BBCode 📋</button>
+                            <div class="copy-options">
+                                <label class="option-checkbox">
+                                    <input type="checkbox" id="hiddenFormat_generic">
+                                    <span>隐藏格式</span>
+                                </label>
+                            </div>
+                        </div>
+                    ` : ''}
                 </div>
                 <div class="streams-table-container">
                     <table class="streams-table">
@@ -277,6 +295,16 @@ export class GenericMediaAnalyzer {
             const streamType = this.getStreamTypeString(stream.codec_type);
             const codecName = stream.codec_name || 'Unknown';
             const analysisResult = this.streamAnalysisResults.get(i);
+            
+            // 存储流信息到 streams Map
+            const streamInfo: GenericStreamInfo = {
+                index: stream.index !== undefined ? stream.index : i,
+                codecType: stream.codec_type,
+                codecName: codecName,
+                streamType: streamType,
+                avsDetails: analysisResult ? analysisResult.avsDetails : undefined
+            };
+            this.streams.set(i, streamInfo);
             
             html += `
                 <tr>
@@ -443,5 +471,119 @@ export class GenericMediaAnalyzer {
         }
 
         return parseFloat(bytes.toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // 复制媒体信息的方法（Text格式）
+    public copyMediaInfo(): void {
+        // 收集有 avsDetails 的流信息
+        const avsDetailsList: string[] = [];
+        
+        for (const [index, stream] of this.streams) {
+            if (stream.avsDetails) {
+                // 使用流的实际 index 作为 PID 参数，但从结果中移除 ID 行
+                const fullCopyText = AVSAudioInfoToCopyFormat(stream.avsDetails, stream.index);
+                // 移除第一行（ID行）
+                const lines = fullCopyText.split('\n');
+                const copyTextWithoutId = lines.slice(1).join('\n');
+                avsDetailsList.push(copyTextWithoutId);
+            }
+        }
+
+        if (avsDetailsList.length === 0) {
+            // 如果没有avsDetails，复制空字符串
+            navigator.clipboard.writeText('').then(() => {
+                this.showCopyNotification('已复制空内容');
+            }).catch(err => {
+                console.error('复制失败:', err);
+                this.showCopyNotification('复制失败');
+            });
+            return;
+        }
+
+        // 各项间空一行
+        const combinedText = avsDetailsList.join('\n\n');
+
+        navigator.clipboard.writeText(combinedText).then(() => {
+            this.showCopyNotification('已复制媒体信息');
+        }).catch(err => {
+            console.error('复制失败:', err);
+            this.showCopyNotification('复制失败');
+        });
+    }
+
+    // 复制媒体信息为BBCode格式的方法
+    public copyMediaInfoBBCode(): void {
+        // 获取隐藏格式选项状态
+        const hiddenFormatCheckbox = document.getElementById('hiddenFormat_generic') as HTMLInputElement;
+        const useHiddenFormat = hiddenFormatCheckbox?.checked || false;
+        
+        // 收集有 avsDetails 的流信息
+        const avsDetailsList: string[] = [];
+        
+        for (const [index, stream] of this.streams) {
+            if (stream.avsDetails) {
+                // 使用流的实际 index 作为 PID 参数，但从结果中移除 ID 行
+                const fullCopyText = AVSAudioInfoToCopyFormat(stream.avsDetails, stream.index);
+                // 移除第一行（ID行）
+                const lines = fullCopyText.split('\n');
+                const copyTextWithoutId = lines.slice(1).join('\n');
+                avsDetailsList.push(copyTextWithoutId);
+            }
+        }
+
+        if (avsDetailsList.length === 0) {
+            // 如果没有avsDetails，复制空字符串
+            navigator.clipboard.writeText('').then(() => {
+                this.showCopyNotification('已复制空内容');
+            }).catch(err => {
+                console.error('复制失败:', err);
+                this.showCopyNotification('复制失败');
+            });
+            return;
+        }
+
+        // 根据选项生成不同的BBCode格式
+        let combinedText: string;
+        if (useHiddenFormat) {
+            combinedText = '[spoiler="AVS Additional Mediainfo"]\n' + avsDetailsList.join('\n\n') + '\n[/spoiler]';
+        } else {
+            combinedText = '[quote]\n' + avsDetailsList.join('\n\n') + '\n[/quote]';
+        }
+
+        navigator.clipboard.writeText(combinedText).then(() => {
+            this.showCopyNotification('已复制BBCode格式');
+        }).catch(err => {
+            console.error('复制失败:', err);
+            this.showCopyNotification('复制失败');
+        });
+    }
+
+    // 显示复制通知
+    private showCopyNotification(message: string): void {
+        // 创建通知元素
+        const notification = document.createElement('div');
+        notification.className = 'copy-notification';
+        notification.textContent = message;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            z-index: 1000;
+            font-size: 14px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        `;
+
+        document.body.appendChild(notification);
+
+        // 2秒后自动移除
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 2000);
     }
 }
