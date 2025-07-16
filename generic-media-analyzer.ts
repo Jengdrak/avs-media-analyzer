@@ -1,5 +1,22 @@
 // 通用媒体分析器 - 处理非TS文件
+import { AVSAudioInfo, AVSAudioInfoToDisplayItems, AVSAudioInfoToCopyFormat } from './avs-info.js';
+
+// 通用媒体流信息接口
+interface GenericStreamInfo {
+    index: number;
+    codecType: number;
+    codecName: string;
+    streamType: string; // video/audio/subtitle等
+    avsDetails?: AVSAudioInfo;
+}
+
 export class GenericMediaAnalyzer {
+    private demuxer: any;
+    private av3aAnalyzer: any;
+    private mediaInfo: any;
+    private streamAnalysisResults: Map<number, any> = new Map();
+    private streams: Map<number, GenericStreamInfo> = new Map(); // 存储流信息
+
     constructor() {
         // 初始化
     }
@@ -10,14 +27,110 @@ export class GenericMediaAnalyzer {
         this.showAnalysisSection();
         
         try {
-            // 模拟分析过程
-            await this.simulateAnalysis();
+            // 初始化 WebDemuxer
+            await this.initializeWebDemuxer();
+            
+            // 分析文件
+            await this.analyzeFile(file);
             
             // 显示结果
             this.showResults(file);
         } catch (error) {
             console.error('解析错误:', error);
             this.showError('文件解析失败: ' + (error as Error).message);
+        }
+    }
+
+    // 初始化 WebDemuxer
+    private async initializeWebDemuxer(): Promise<void> {
+        const { WebDemuxer } = await import('https://cdn.jsdelivr.net/npm/web-demuxer/+esm' as any);
+        
+        this.demuxer = new WebDemuxer({
+            wasmFilePath: "https://cdn.jsdelivr.net/npm/web-demuxer@latest/dist/wasm-files/web-demuxer.wasm"
+        });
+        
+        // 设置日志级别为警告，减少控制台输出
+        this.demuxer.setLogLevel(24); // AV_LOG_WARNING
+    }
+
+    // 分析文件
+    private async analyzeFile(file: File): Promise<void> {
+        // 使用 WebDemuxer 分析文件
+        await this.demuxer.load(file);
+        
+        // 获取媒体信息
+        this.mediaInfo = await this.demuxer.getMediaInfo();
+        console.log('媒体信息:', this.mediaInfo);
+        
+        // 分析各个流
+        if (this.mediaInfo.streams && this.mediaInfo.streams.length > 0) {
+            await this.analyzeStreams();
+        }
+    }
+
+    // 分析各个流
+    private async analyzeStreams(): Promise<void> {
+        for (let i = 0; i < this.mediaInfo.streams.length; i++) {
+            const stream = this.mediaInfo.streams[i];
+            
+            // 检查是否为音频流且可能是 AV3A
+            if (stream.codec_type === 1 && // 音频流
+                (stream.codec_name === 'av3a' || !stream.codec_name || stream.codec_name === '')) {
+                
+                console.log(`检测到疑似 AV3A 音频流，索引: ${i}`);
+                
+                try {
+                    // 尝试 AV3A 分析
+                    const av3aResult = await this.tryAV3AAnalysis(stream);
+                    if (av3aResult) {
+                        // 更新流信息
+                        stream.codec_name = 'av3a';
+                        this.streamAnalysisResults.set(i, av3aResult);
+                        console.log(`✅ AV3A 分析成功，流索引: ${i}`);
+                    }
+                } catch (error) {
+                    console.warn(`AV3A 分析失败，流索引: ${i}`, error);
+                }
+            }
+        }
+    }
+
+    // 尝试 AV3A 分析
+    private async tryAV3AAnalysis(stream: any): Promise<any> {
+        try {
+            // 获取首包数据
+            const packet = await this.demuxer.getAVPacket(
+                0,                    // time: 时间点 0 秒
+                stream.codec_type,    // streamType: 流类型（数字）
+                stream.index,         // streamIndex: 流索引
+                0                     // seekFlag: 搜索标志
+            );
+
+            if (!packet || !packet.data || packet.data.length === 0) {
+                throw new Error('无法获取数据包');
+            }
+
+            // 初始化 AV3A 分析器（如果还没有）
+            if (!this.av3aAnalyzer) {
+                const av3aModule = await import('./av3a-analyzer.js');
+                this.av3aAnalyzer = new av3aModule.AV3AAnalyzer();
+                console.log('⚡ AV3A 分析器已初始化');
+            }
+
+            // 使用 AV3A 分析器分析数据包
+            const analysisResult = this.av3aAnalyzer.analyze(packet.data);
+            
+            if (analysisResult) {
+                return {
+                    avsDetails: analysisResult,
+                    packetData: packet.data.slice(0, 100) // 保存前100字节用于显示
+                };
+            }
+            
+            return null;
+        } catch (error) {
+            console.warn('AV3A 分析失败:', error);
+            return null;
         }
     }
 
@@ -109,7 +222,8 @@ export class GenericMediaAnalyzer {
         // 流数量
         const streamCountElement = document.getElementById('streamCount') as HTMLElement;
         if (streamCountElement) {
-            streamCountElement.textContent = '0'; // 暂时显示0
+            const streamCount = this.mediaInfo?.streams?.length || 0;
+            streamCountElement.textContent = streamCount.toString();
         }
     }
 
@@ -119,6 +233,8 @@ export class GenericMediaAnalyzer {
         if (!streamsContainer) return;
 
         // 创建通用媒体文件的流信息显示
+        const streamRows = this.generateStreamRows();
+        
         streamsContainer.innerHTML = `
             <div class="streams-section">
                 <div class="program-header">
@@ -131,18 +247,120 @@ export class GenericMediaAnalyzer {
                                 <th>ID</th>
                                 <th>流类型</th>
                                 <th>编码格式</th>
-                                <th>语言</th>
-                                <th>描述</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td colspan="5" style="text-align: center; padding: 20px; color: #666;">
-                                    暂无流信息 - 通用媒体分析功能开发中
-                                </td>
-                            </tr>
+                            ${streamRows}
                         </tbody>
                     </table>
+                </div>
+            </div>
+        `;
+    }
+
+    // 生成流行数据
+    private generateStreamRows(): string {
+        if (!this.mediaInfo?.streams || this.mediaInfo.streams.length === 0) {
+            return `
+                <tr>
+                    <td colspan="3" style="text-align: center; padding: 20px; color: #666;">
+                        暂无流信息
+                    </td>
+                </tr>
+            `;
+        }
+
+        let html = '';
+        
+        for (let i = 0; i < this.mediaInfo.streams.length; i++) {
+            const stream = this.mediaInfo.streams[i];
+            const streamType = this.getStreamTypeString(stream.codec_type);
+            const codecName = stream.codec_name || 'Unknown';
+            const analysisResult = this.streamAnalysisResults.get(i);
+            
+            html += `
+                <tr>
+                    <td>${stream.index !== undefined ? stream.index : i}</td>
+                    <td>${streamType}</td>
+                    <td>
+                        <div class="codec-info-container">
+                            <div class="codec-info-text">
+                                ${codecName}
+                            </div>
+                            ${analysisResult ? `<button class="toggle-details-btn" onclick="toggleDetails('avs-info-${i}')">⏬</button>` : ''}
+                        </div>
+                    </td>
+                </tr>
+            `;
+
+            // 如果有 AV3A 分析结果，添加展开行
+            if (analysisResult) {
+                html += `
+                    <tr id="avs-info-${i}" class="avs-details-row" style="display: none;">
+                        <td colspan="3">
+                            ${this.formatAVSDetailsCard(analysisResult.avsDetails)}
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        return html;
+    }
+
+    // 获取流类型字符串
+    private getStreamTypeString(codecType: number): string {
+        const typeNames: { [key: number]: string } = {
+            [-1]: 'unknown',
+            [0]: 'video',
+            [1]: 'audio', 
+            [2]: 'data',
+            [3]: 'subtitle',
+            [4]: 'attachment'
+        };
+        return typeNames[codecType] || 'unknown';
+    }
+
+
+    // 格式化 AVS 详细信息卡片（沿用 TS 分析器的 UI 逻辑）
+    private formatAVSDetailsCard(avsDetails: AVSAudioInfo): string {
+        // 使用 TS 分析器的标准格式化函数
+        const displayItems = AVSAudioInfoToDisplayItems(avsDetails);
+        
+        const totalItems = displayItems.length;
+        const itemsPerColumn = Math.ceil(totalItems / 2);
+        const leftColumnItems = displayItems.slice(0, itemsPerColumn);
+        const rightColumnItems = displayItems.slice(itemsPerColumn);
+        
+        const generateItemHTML = (item: { label: string; value: string; isHighlight?: boolean }) => {
+            const valueHTML = item.isHighlight 
+                ? `<span style="background: #ff6b6b; color: white; padding: 0.3rem 0.8rem; border-radius: 4px; font-weight: 600;">${item.value}</span>`
+                : item.value;
+            
+            return `
+                <div class="avs-info-item">
+                    <label>${item.label}</label>
+                    <span>${valueHTML}</span>
+                </div>
+            `;
+        };
+        
+        const leftColumnHTML = leftColumnItems.map(generateItemHTML).join('');
+        const rightColumnHTML = rightColumnItems.map(generateItemHTML).join('');
+        
+        return `
+            <div class="avs-details-card">
+                <div class="avs-card-header">
+                    <span class="avs-icon">🎵</span>
+                    <h5>AV3A 音频流详细信息</h5>
+                </div>
+                <div class="avs-card-content">
+                    <div class="avs-info-section">
+                        ${leftColumnHTML}
+                    </div>
+                    <div class="avs-info-section">
+                        ${rightColumnHTML}
+                    </div>
                 </div>
             </div>
         `;
