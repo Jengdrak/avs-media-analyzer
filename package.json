@@ -1,7 +1,7 @@
 {
   "name": "ts-avs-analyzer",
   "version": "1.2.0",
-  "description": "TS传输流自研标准分析器",
+  "description": "AVS自研标准分析器",
   "main": "index.html",
   "scripts": {
     "dev": "live-server .",
@@ -22,7 +22,7 @@
     "analysis",
     "parser",
     "avs",
-    "avs2", 
+    "avs2",
     "avs3",
     "audio-vivid"
   ],
@@ -42,6 +42,7 @@
   },
   "homepage": "https://github.com/Jengdrak/ts-avs-analyzer#readme",
   "dependencies": {
+    "@sylphlab/pdf-reader-mcp": "^0.3.23",
     "html-inline": "^1.2.0"
   },
   "engines": {
