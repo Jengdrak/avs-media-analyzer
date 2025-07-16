@@ -1,8 +1,15 @@
-# TS-AVS Analyzer
+# AVS Media Analyzer
 
 [简体中文](README.zh-Hans.md) | [English](README.en.md)
 
-AVS/AVS2/AVS3/Audio Vivid metadata parser (MPEG-2 Transport Stream (.ts/.m2ts) format files only)
+AVS/AVS2/AVS3/Audio Vivid metadata parser
+
+## Supported Formats
+
+- **TS/M2TS formats** (.ts, .m2ts): Complete AVS/AVS2/AVS3/Audio Vivid metadata parsing
+- **General media formats** (.mp4, .mov, .mkv, .webm, .flv, .m4v, .wmv, .avi): AV3A (Audio Vivid) audio stream detection and parsing
+
+> General media formats use [bilibili/web-demuxer](https://github.com/bilibili/web-demuxer) to extract streams
 
 ## Online Usage
 
