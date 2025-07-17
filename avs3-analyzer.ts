@@ -277,7 +277,7 @@ export class AVS3Analyzer {
      * marker_bit f(1) 
      * bbv_buffer_size u(18) 
      * marker_bit f(1) 
-     * max_dpb_minus1 ue(v) 
+     * max_dpb_minus1 u(4) 
      * rpl1_index_exist_flag u(1) 
      * rpl1_same_as_rpl0_flag u(1) 
      * marker_bit f(1) 
@@ -468,7 +468,7 @@ export class AVS3Analyzer {
             reader.checkMarkerBit();
             const bbv_buffer_size = reader.readBits(18);
             reader.checkMarkerBit();
-            const max_dpb = reader.readUE() + 1;
+            const max_dpb = reader.readBits(4) + 1;
             
             const rpl1_index_exist_flag = reader.readBoolean();
             const rpl1_same_as_rpl0_flag = reader.readBoolean();
@@ -538,11 +538,7 @@ export class AVS3Analyzer {
             const intra_pf_enable_flag = reader.readBoolean();
             const tscpm_enable_flag = reader.readBoolean();
             
-            try {
-                reader.checkMarkerBit();
-            } catch (error) {
-                console.log('Marker bit check failed');
-            }
+            reader.checkMarkerBit();
             
             const dt_enable_flag = reader.readBoolean();
             
@@ -834,7 +830,7 @@ export class AVS3Analyzer {
             wqm8x8: Array.from({ length: 8 }, () => Array(8).fill(0))
         };
 
-        Object.entries(matrices).forEach(([key, matrix]) => {
+        Object.entries(matrices).forEach(([_, matrix]) => {
             matrix.forEach((row, i) => {
                 row.forEach((_, j) => {
                     matrix[i][j] = reader.readUE();
