@@ -1,5 +1,8 @@
 // 通用媒体分析器 - 处理非TS文件
-import { AVSAudioInfo, AVSAudioInfoToDisplayItems, AVSAudioInfoToCopyFormat } from './avs-info.js';
+import { AVSVideoInfo, AVSAudioInfo, AVSAudioInfoToDisplayItems, AVSAudioInfoToCopyFormat, AVSVideoInfoToDisplayItems, AVSVideoInfoToCopyFormat } from './avs-info.js';
+import { AVS1Analyzer } from './avs-analyzer.js';
+import { AVS2Analyzer } from './avs2-analyzer.js';
+import { AVS3Analyzer } from './avs3-analyzer.js';
 
 // 通用媒体流信息接口
 interface GenericStreamInfo {
@@ -7,12 +10,15 @@ interface GenericStreamInfo {
     codecType: number;
     codecName: string;
     streamType: string; // video/audio/subtitle等
-    avsDetails?: AVSAudioInfo;
+    avsDetails?: AVSVideoInfo | AVSAudioInfo;
 }
 
 export class GenericMediaAnalyzer {
     private demuxer: any;
     private av3aAnalyzer: any;
+    private avs1Analyzer: AVS1Analyzer | null = null;
+    private avs2Analyzer: AVS2Analyzer | null = null;
+    private avs3Analyzer: AVS3Analyzer | null = null;
     private mediaInfo: any;
     private streamAnalysisResults: Map<number, any> = new Map();
     private streams: Map<number, GenericStreamInfo> = new Map(); // 存储流信息
@@ -92,6 +98,24 @@ export class GenericMediaAnalyzer {
                     console.warn(`AV3A 分析失败，流索引: ${i}`, error);
                 }
             }
+            
+            // 检查是否为视频流且可能是 AVS
+            if (stream.codec_type === 0 && // 视频流
+                (stream.codec_name === 'cavs' || stream.codec_name === 'avs2' || stream.codec_name === 'avs3')) {
+                
+                console.log(`检测到AVS视频流，索引: ${i}, codec: ${stream.codec_name}`);
+                
+                try {
+                    // 尝试视频分析
+                    const videoResult = await this.tryVideoAnalysis(stream);
+                    if (videoResult) {
+                        this.streamAnalysisResults.set(i, videoResult);
+                        console.log(`✅ ${stream.codec_name.toUpperCase()} 视频分析成功，流索引: ${i}`);
+                    }
+                } catch (error) {
+                    console.warn(`${stream.codec_name.toUpperCase()} 视频分析失败，流索引: ${i}`, error);
+                }
+            }
         }
     }
 
@@ -130,6 +154,62 @@ export class GenericMediaAnalyzer {
             return null;
         } catch (error) {
             console.warn('AV3A 分析失败:', error);
+            return null;
+        }
+    }
+
+    // 尝试视频分析
+    private async tryVideoAnalysis(stream: any): Promise<any> {
+        try {
+            // 获取首包数据
+            const packet = await this.demuxer.getAVPacket(
+                0,                    // time: 时间点 0 秒
+                stream.codec_type,    // streamType: 流类型（数字）
+                stream.index,         // streamIndex: 流索引
+                0                     // seekFlag: 搜索标志
+            );
+
+            if (!packet || !packet.data || packet.data.length === 0) {
+                throw new Error('无法获取数据包');
+            }
+
+            let analysisResult = null;
+            const codecName = stream.codec_name?.toLowerCase();
+
+            // 根据编码格式选择对应的分析器
+            if (codecName === 'cavs') {
+                // 初始化 AVS1 分析器 (CAVS 使用 AVS1 分析器)
+                if (!this.avs1Analyzer) {
+                    this.avs1Analyzer = new AVS1Analyzer();
+                    console.log('⚡ AVS1 分析器已初始化');
+                }
+                analysisResult = this.avs1Analyzer.analyze(packet.data);
+            } else if (codecName === 'avs2') {
+                // 初始化 AVS2 分析器
+                if (!this.avs2Analyzer) {
+                    this.avs2Analyzer = new AVS2Analyzer();
+                    console.log('⚡ AVS2 分析器已初始化');
+                }
+                analysisResult = this.avs2Analyzer.analyze(packet.data);
+            } else if (codecName === 'avs3') {
+                // 初始化 AVS3 分析器
+                if (!this.avs3Analyzer) {
+                    this.avs3Analyzer = new AVS3Analyzer();
+                    console.log('⚡ AVS3 分析器已初始化');
+                }
+                analysisResult = this.avs3Analyzer.analyze(packet.data);
+            }
+
+            if (analysisResult) {
+                return {
+                    avsDetails: analysisResult,
+                    packetData: packet.data.slice(0, 100) // 保存前100字节用于显示
+                };
+            }
+            
+            return null;
+        } catch (error) {
+            console.warn(`视频分析失败 (${stream.codec_name}):`, error);
             return null;
         }
     }
@@ -326,7 +406,7 @@ export class GenericMediaAnalyzer {
                 html += `
                     <tr id="avs-info-${i}" class="avs-details-row" style="display: none;">
                         <td colspan="3">
-                            ${this.formatAVSDetailsCard(analysisResult.avsDetails)}
+                            ${this.formatAVSDetailsCard(analysisResult.avsDetails, streamInfo)}
                         </td>
                     </tr>
                 `;
@@ -351,9 +431,14 @@ export class GenericMediaAnalyzer {
 
 
     // 格式化 AVS 详细信息卡片（沿用 TS 分析器的 UI 逻辑）
-    private formatAVSDetailsCard(avsDetails: AVSAudioInfo): string {
-        // 使用 TS 分析器的标准格式化函数
-        const displayItems = AVSAudioInfoToDisplayItems(avsDetails);
+    private formatAVSDetailsCard(avsDetails: AVSVideoInfo | AVSAudioInfo, streamInfo: GenericStreamInfo): string {
+        // 根据流类型判断是音频还是视频
+        const isAudioStream = streamInfo.streamType === 'audio';
+        
+        // 使用对应的格式化函数
+        const displayItems = isAudioStream 
+            ? AVSAudioInfoToDisplayItems(avsDetails as AVSAudioInfo)
+            : AVSVideoInfoToDisplayItems(avsDetails as AVSVideoInfo);
         
         const totalItems = displayItems.length;
         const itemsPerColumn = Math.ceil(totalItems / 2);
@@ -361,8 +446,9 @@ export class GenericMediaAnalyzer {
         const rightColumnItems = displayItems.slice(itemsPerColumn);
         
         const generateItemHTML = (item: { label: string; value: string; isHighlight?: boolean }) => {
+            const highlightColor = isAudioStream ? '#ff6b6b' : '#28a745';
             const valueHTML = item.isHighlight 
-                ? `<span style="background: #ff6b6b; color: white; padding: 0.3rem 0.8rem; border-radius: 4px; font-weight: 600;">${item.value}</span>`
+                ? `<span style="background: ${highlightColor}; color: white; padding: 0.3rem 0.8rem; border-radius: 4px; font-weight: 600;">${item.value}</span>`
                 : item.value;
             
             return `
@@ -376,11 +462,15 @@ export class GenericMediaAnalyzer {
         const leftColumnHTML = leftColumnItems.map(generateItemHTML).join('');
         const rightColumnHTML = rightColumnItems.map(generateItemHTML).join('');
         
+        // 根据流类型设置不同的图标和标题
+        const icon = isAudioStream ? '🎵' : '🎬';
+        const title = isAudioStream ? 'AVS 音频流详细信息' : 'AVS 视频流详细信息';
+        
         return `
             <div class="avs-details-card">
                 <div class="avs-card-header">
-                    <span class="avs-icon">🎵</span>
-                    <h5>AV3A 音频流详细信息</h5>
+                    <span class="avs-icon">${icon}</span>
+                    <h5>${title}</h5>
                 </div>
                 <div class="avs-card-content">
                     <div class="avs-info-section">
@@ -480,8 +570,11 @@ export class GenericMediaAnalyzer {
         
         for (const [index, stream] of this.streams) {
             if (stream.avsDetails) {
-                // 使用流的实际 index 作为 PID 参数，但从结果中移除 ID 行
-                const fullCopyText = AVSAudioInfoToCopyFormat(stream.avsDetails, stream.index);
+                // 根据流类型选择正确的格式化函数
+                const isAudioStream = stream.streamType === 'audio';
+                const fullCopyText = isAudioStream 
+                    ? AVSAudioInfoToCopyFormat(stream.avsDetails as AVSAudioInfo, stream.index)
+                    : AVSVideoInfoToCopyFormat(stream.avsDetails as AVSVideoInfo, stream.index);
                 // 移除第一行（ID行）
                 const lines = fullCopyText.split('\n');
                 const copyTextWithoutId = lines.slice(1).join('\n');
@@ -522,8 +615,11 @@ export class GenericMediaAnalyzer {
         
         for (const [index, stream] of this.streams) {
             if (stream.avsDetails) {
-                // 使用流的实际 index 作为 PID 参数，但从结果中移除 ID 行
-                const fullCopyText = AVSAudioInfoToCopyFormat(stream.avsDetails, stream.index);
+                // 根据流类型选择正确的格式化函数
+                const isAudioStream = stream.streamType === 'audio';
+                const fullCopyText = isAudioStream 
+                    ? AVSAudioInfoToCopyFormat(stream.avsDetails as AVSAudioInfo, stream.index)
+                    : AVSVideoInfoToCopyFormat(stream.avsDetails as AVSVideoInfo, stream.index);
                 // 移除第一行（ID行）
                 const lines = fullCopyText.split('\n');
                 const copyTextWithoutId = lines.slice(1).join('\n');
