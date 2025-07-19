@@ -77,8 +77,6 @@ export class ISOMBFFAnalyzer {
                 this.mediaInfo = info;
                 console.log('📁 文件信息:', info);
                 
-                moovParsed = true;
-                
                 // 处理 tracks
                 this.processTracks(info.tracks);
                 
@@ -96,12 +94,16 @@ export class ISOMBFFAnalyzer {
                     }
                 }
                 
-                // 如果有目标 tracks，启动样本提取
                 if (pendingTracks.size > 0) {
-                    console.log(`开始为 ${pendingTracks.size} 个目标 codec track 提取样本`);
+                    console.log(`开始为${pendingTracks.size}个目标codec track提取sample`);
                     this.mp4boxFile.start();
-                } else {
-                    console.log('未发现目标 codec tracks');
+                }
+                
+                // 标记MOOV已解析完成
+                moovParsed = true;
+                
+                // 如果没有需要解析的track，直接结束
+                if (pendingTracks.size === 0) {
                     readComplete = true;
                     resolve();
                 }
@@ -144,6 +146,19 @@ export class ISOMBFFAnalyzer {
                     if (!readComplete) {
                         this.mp4boxFile.flush();
                         readComplete = true;
+                        
+                        // 文件读取完成后，如果有目标tracks，现在才启动sample提取
+                        if (pendingTracks.size > 0) {
+                            console.log(`文件读取完成，开始为 ${pendingTracks.size} 个目标 codec track 提取样本`);
+                            try {
+                                this.mp4boxFile.start();
+                            } catch (error) {
+                                console.error('启动sample提取失败:', error);
+                                resolve(); // 即使失败也继续，不阻塞流程
+                            }
+                        } else {
+                            resolve();
+                        }
                     }
                     return;
                 }
