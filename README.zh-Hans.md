@@ -6,10 +6,11 @@ AVS/AVS2/AVS3/Audio Vivid元信息解析
 
 ## 支持的格式
 
-- **TS/M2TS格式** (.ts, .m2ts): 完整的AVS/AVS2/AVS3/Audio Vivid元信息解析
-- **其它媒体格式** (.mp4, .mov, .mkv, .webm, .flv, .m4v, .wmv, .avi): 完整的AVS/AVS2/AVS3/Audio Vivid元信息解析
+- **MPEG-TS格式** (.ts, .m2ts): 完整的AVS/AVS2/AVS3/Audio Vivid元信息解析
+- **ISOBMFF格式** (.mp4, .mov, .m4v): 完整的AVS2/AVS3/Audio Vivid元信息解析(AVS2/AVS3尚缺少相应文件测试)
+- **其它格式** (.mkv, .webm, .flv, .wmv, .avi): 完整的AVS/AVS2/AVS3/Audio Vivid元信息解析
 
-> 其它媒体格式使用 [bilibili/web-demuxer](https://github.com/bilibili/web-demuxer) 提取码流
+> 其它格式使用 [bilibili/web-demuxer](https://github.com/bilibili/web-demuxer) 提取码流
 
 ## 在线使用
 

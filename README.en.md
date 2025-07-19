@@ -6,10 +6,11 @@ AVS/AVS2/AVS3/Audio Vivid metadata parser
 
 ## Supported Formats
 
-- **TS/M2TS formats** (.ts, .m2ts): Complete AVS/AVS2/AVS3/Audio Vivid metadata parsing
-- **Other media formats** (.mp4, .mov, .mkv, .webm, .flv, .m4v, .wmv, .avi): Complete AVS/AVS2/AVS3/Audio Vivid metadata parsing
+- **MPEG-TS formats** (.ts, .m2ts): Complete AVS/AVS2/AVS3/Audio Vivid metadata parsing
+- **ISOBMFF formats** (.mp4, .mov, .m4v): Complete AVS2/AVS3/Audio Vivid metadata parsing (lacking AVS2/AVS3 test files)
+- **Other formats** (.mkv, .webm, .flv, .wmv, .avi): Complete AVS/AVS2/AVS3/Audio Vivid metadata parsing
 
-> Other media formats use [bilibili/web-demuxer](https://github.com/bilibili/web-demuxer) to extract streams
+> Other formats use [bilibili/web-demuxer](https://github.com/bilibili/web-demuxer) to extract streams
 
 ## Online Usage
 
