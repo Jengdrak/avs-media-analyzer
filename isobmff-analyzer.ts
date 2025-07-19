@@ -8,6 +8,10 @@ interface MP4TrackInfo {
     id: number;
     type: string; // 'video' 或 'audio'
     codec: string; // FourCC
+    codecInfo?: {
+        name: string;
+        type: string;
+    };
     avsDetails?: AVSVideoInfo | AVSAudioInfo;
 }
 
@@ -21,8 +25,251 @@ export class ISOMBFFAnalyzer {
     private mediaInfo: any;
     private targetCodecs = ['avst', 'avs3', 'av3a']; // 目标 codec FourCC
 
+    // FourCC 到编码格式的映射表 (基于 FFmpeg ff_codec_movvideo_tags 和 ff_codec_movaudio_tags)
+    private static readonly FOURCC_CODEC_MAP = new Map<string, { name: string; type: string }>([
+        // 视频编码格式
+        ['raw ', { name: 'Uncompressed RGB', type: 'Video' }],
+        ['yuv2', { name: 'Uncompressed YUV422', type: 'Video' }],
+        ['2vuy', { name: 'UNCOMPRESSED 8BIT 4:2:2', type: 'Video' }],
+        ['yuvs', { name: 'same as 2vuy but byte swapped', type: 'Video' }],
+        ['L555', { name: 'Uncompressed RGB 555', type: 'Video' }],
+        ['L565', { name: 'Uncompressed RGB 565', type: 'Video' }],
+        ['B565', { name: 'Uncompressed RGB 565 BE', type: 'Video' }],
+        ['24BG', { name: 'Uncompressed 24-bit BGR', type: 'Video' }],
+        ['BGRA', { name: 'Uncompressed BGRA', type: 'Video' }],
+        ['RGBA', { name: 'Uncompressed RGBA', type: 'Video' }],
+        ['ABGR', { name: 'Uncompressed ABGR', type: 'Video' }],
+        ['b16g', { name: 'Uncompressed 16-bit grayscale', type: 'Video' }],
+        ['b48r', { name: 'Uncompressed 48-bit RGB', type: 'Video' }],
+        ['bxbg', { name: 'Uncompressed big-endian BGR', type: 'Video' }],
+        ['bxrg', { name: 'Uncompressed big-endian RGB', type: 'Video' }],
+        ['bxyv', { name: 'Uncompressed big-endian YUV', type: 'Video' }],
+        ['NO16', { name: 'Uncompressed 16-bit', type: 'Video' }],
+        ['DVOO', { name: 'Digital Voodoo SD 8 Bit', type: 'Video' }],
+        ['R420', { name: 'Radius DV YUV PAL', type: 'Video' }],
+        ['R411', { name: 'Radius DV YUV NTSC', type: 'Video' }],
+        ['R10k', { name: 'UNCOMPRESSED 10BIT RGB', type: 'Video' }],
+        ['R10g', { name: 'UNCOMPRESSED 10BIT RGB', type: 'Video' }],
+        ['r210', { name: 'UNCOMPRESSED 10BIT RGB', type: 'Video' }],
+        ['AVUI', { name: 'AVID Uncompressed deinterleaved UYVY422', type: 'Video' }],
+        ['AVrp', { name: 'Avid 1:1 10-bit RGB Packer', type: 'Video' }],
+        ['SUDS', { name: 'Avid DS Uncompressed', type: 'Video' }],
+        ['v210', { name: 'UNCOMPRESSED 10BIT 4:2:2', type: 'Video' }],
+        ['bxy2', { name: 'BOXX 10BIT 4:2:2', type: 'Video' }],
+        ['v308', { name: 'UNCOMPRESSED 8BIT 4:4:4', type: 'Video' }],
+        ['v408', { name: 'UNCOMPRESSED 8BIT 4:4:4:4', type: 'Video' }],
+        ['v410', { name: 'UNCOMPRESSED 10BIT 4:4:4', type: 'Video' }],
+        ['Y41P', { name: 'UNCOMPRESSED 12BIT 4:1:1', type: 'Video' }],
+        ['yuv4', { name: 'libquicktime packed yuv420p', type: 'Video' }],
+        ['Y216', { name: 'Targa Y216', type: 'Video' }],
+        
+        ['jpeg', { name: 'PhotoJPEG', type: 'Video' }],
+        ['mjpa', { name: 'Motion-JPEG (format A)', type: 'Video' }],
+        ['AVDJ', { name: 'MJPEG with alpha-channel (AVID JFIF meridien compressed)', type: 'Video' }],
+        ['dmb1', { name: 'Motion JPEG OpenDML', type: 'Video' }],
+        ['mjpb', { name: 'Motion-JPEG (format B)', type: 'Video' }],
+        
+        ['SVQ1', { name: 'Sorenson Video v1', type: 'Video' }],
+        ['svq1', { name: 'Sorenson Video v1', type: 'Video' }],
+        ['svqi', { name: 'Sorenson Video v1 (from QT specs)', type: 'Video' }],
+        ['SVQ3', { name: 'Sorenson Video v3', type: 'Video' }],
+        
+        ['mp4v', { name: 'MPEG-4 Visual', type: 'Video' }],
+        ['DIVX', { name: 'OpenDiVX', type: 'Video' }],
+        ['XVID', { name: 'Xvid', type: 'Video' }],
+        ['3IV2', { name: '3IVX', type: 'Video' }],
+        
+        ['h263', { name: 'H.263', type: 'Video' }],
+        ['s263', { name: 'H.263', type: 'Video' }],
+        
+        ['dvcp', { name: 'DV PAL', type: 'Video' }],
+        ['dvc ', { name: 'DV NTSC', type: 'Video' }],
+        ['dvpp', { name: 'DVCPRO PAL produced by FCP', type: 'Video' }],
+        ['dv5p', { name: 'DVCPRO50 PAL produced by FCP', type: 'Video' }],
+        ['dv5n', { name: 'DVCPRO50 NTSC produced by FCP', type: 'Video' }],
+        ['AVdv', { name: 'AVID DV', type: 'Video' }],
+        ['AVd1', { name: 'AVID DV100', type: 'Video' }],
+        ['dvhq', { name: 'DVCPRO HD 720p50', type: 'Video' }],
+        ['dvhp', { name: 'DVCPRO HD 720p60', type: 'Video' }],
+        ['dvh1', { name: 'DVCPRO HD', type: 'Video' }],
+        ['dvh2', { name: 'DVCPRO HD', type: 'Video' }],
+        ['dvh4', { name: 'DVCPRO HD', type: 'Video' }],
+        ['dvh5', { name: 'DVCPRO HD 50i produced by FCP', type: 'Video' }],
+        ['dvh6', { name: 'DVCPRO HD 60i produced by FCP', type: 'Video' }],
+        ['dvh3', { name: 'DVCPRO HD 30p produced by FCP', type: 'Video' }],
+        
+        ['VP31', { name: 'On2 VP3', type: 'Video' }],
+        ['rpza', { name: 'Apple Video (RPZA)', type: 'Video' }],
+        ['cvid', { name: 'Cinepak', type: 'Video' }],
+        ['8BPS', { name: 'Planar RGB (8BPS)', type: 'Video' }],
+        ['smc ', { name: 'Apple Graphics (SMC)', type: 'Video' }],
+        ['rle ', { name: 'Apple Animation (RLE)', type: 'Video' }],
+        ['WRLE', { name: 'Microsoft RLE', type: 'Video' }],
+        ['qdrw', { name: 'QuickDraw', type: 'Video' }],
+        ['WRAW', { name: 'Uncompressed', type: 'Video' }],
+        
+        ['avc1', { name: 'H.264/AVC', type: 'Video' }],
+        ['ai5p', { name: 'AVC-Intra 50M 720p24/30/60', type: 'Video' }],
+        ['ai5q', { name: 'AVC-Intra 50M 720p25/50', type: 'Video' }],
+        ['ai52', { name: 'AVC-Intra 50M 1080p25/50', type: 'Video' }],
+        ['ai53', { name: 'AVC-Intra 50M 1080p24/30/60', type: 'Video' }],
+        ['ai55', { name: 'AVC-Intra 50M 1080i50', type: 'Video' }],
+        ['ai56', { name: 'AVC-Intra 50M 1080i60', type: 'Video' }],
+        ['ai1p', { name: 'AVC-Intra 100M 720p24/30/60', type: 'Video' }],
+        ['ai1q', { name: 'AVC-Intra 100M 720p25/50', type: 'Video' }],
+        ['ai12', { name: 'AVC-Intra 100M 1080p25/50', type: 'Video' }],
+        ['ai13', { name: 'AVC-Intra 100M 1080p24/30/60', type: 'Video' }],
+        ['ai15', { name: 'AVC-Intra 100M 1080i50', type: 'Video' }],
+        ['ai16', { name: 'AVC-Intra 100M 1080i60', type: 'Video' }],
+        
+        ['hev1', { name: 'H.265/HEVC', type: 'Video' }],
+        ['hvc1', { name: 'H.265/HEVC', type: 'Video' }],
+        
+        ['m1v1', { name: 'Apple MPEG-1 Camcorder', type: 'Video' }],
+        ['mpeg', { name: 'MPEG-1', type: 'Video' }],
+        ['m1v ', { name: 'MPEG-1', type: 'Video' }],
+        ['m2v1', { name: 'Apple MPEG-2 Camcorder', type: 'Video' }],
+        ['hdv1', { name: 'MPEG2 HDV 720p30', type: 'Video' }],
+        ['hdv2', { name: 'MPEG2 HDV 1080i60', type: 'Video' }],
+        ['hdv3', { name: 'MPEG2 HDV 1080i50', type: 'Video' }],
+        ['hdv4', { name: 'MPEG2 HDV 720p24', type: 'Video' }],
+        ['hdv5', { name: 'MPEG2 HDV 720p25', type: 'Video' }],
+        ['hdv6', { name: 'MPEG2 HDV 1080p24', type: 'Video' }],
+        ['hdv7', { name: 'MPEG2 HDV 1080p25', type: 'Video' }],
+        ['hdv8', { name: 'MPEG2 HDV 1080p30', type: 'Video' }],
+        ['hdv9', { name: 'MPEG2 HDV 720p60 JVC', type: 'Video' }],
+        ['hdva', { name: 'MPEG2 HDV 720p50', type: 'Video' }],
+        ['mx5n', { name: 'MPEG2 IMX NTSC 525/60 50mb/s produced by FCP', type: 'Video' }],
+        ['mx5p', { name: 'MPEG2 IMX PAL 625/50 50mb/s produced by FCP', type: 'Video' }],
+        ['mx4n', { name: 'MPEG2 IMX NTSC 525/60 40mb/s produced by FCP', type: 'Video' }],
+        ['mx4p', { name: 'MPEG2 IMX PAL 625/50 40mb/s produced by FCP', type: 'Video' }],
+        ['mx3n', { name: 'MPEG2 IMX NTSC 525/60 30mb/s produced by FCP', type: 'Video' }],
+        ['mx3p', { name: 'MPEG2 IMX PAL 625/50 30mb/s produced by FCP', type: 'Video' }],
+        ['xd54', { name: 'XDCAM HD422 720p24 CBR', type: 'Video' }],
+        ['xd55', { name: 'XDCAM HD422 720p25 CBR', type: 'Video' }],
+        ['xd59', { name: 'XDCAM HD422 720p60 CBR', type: 'Video' }],
+        ['xd5a', { name: 'XDCAM HD422 720p50 CBR', type: 'Video' }],
+        ['xd5b', { name: 'XDCAM HD422 1080i60 CBR', type: 'Video' }],
+        ['xd5c', { name: 'XDCAM HD422 1080i50 CBR', type: 'Video' }],
+        ['xd5d', { name: 'XDCAM HD422 1080p24 CBR', type: 'Video' }],
+        ['xd5e', { name: 'XDCAM HD422 1080p25 CBR', type: 'Video' }],
+        ['xd5f', { name: 'XDCAM HD422 1080p30 CBR', type: 'Video' }],
+        ['xdv1', { name: 'XDCAM EX 720p30 VBR', type: 'Video' }],
+        ['xdv2', { name: 'XDCAM HD 1080i60', type: 'Video' }],
+        ['xdv3', { name: 'XDCAM HD 1080i50 VBR', type: 'Video' }],
+        ['xdv4', { name: 'XDCAM EX 720p24 VBR', type: 'Video' }],
+        ['xdv5', { name: 'XDCAM EX 720p25 VBR', type: 'Video' }],
+        ['xdv6', { name: 'XDCAM HD 1080p24 VBR', type: 'Video' }],
+        ['xdv7', { name: 'XDCAM HD 1080p25 VBR', type: 'Video' }],
+        ['xdv8', { name: 'XDCAM HD 1080p30 VBR', type: 'Video' }],
+        ['xdv9', { name: 'XDCAM EX 720p60 VBR', type: 'Video' }],
+        ['xdva', { name: 'XDCAM EX 720p50 VBR', type: 'Video' }],
+        ['xdvb', { name: 'XDCAM EX 1080i60 VBR', type: 'Video' }],
+        ['xdvc', { name: 'XDCAM EX 1080i50 VBR', type: 'Video' }],
+        ['xdvd', { name: 'XDCAM EX 1080p24 VBR', type: 'Video' }],
+        ['xdve', { name: 'XDCAM EX 1080p25 VBR', type: 'Video' }],
+        ['xdvf', { name: 'XDCAM EX 1080p30 VBR', type: 'Video' }],
+        ['xdhd', { name: 'XDCAM HD 540p', type: 'Video' }],
+        ['xdh2', { name: 'XDCAM HD422 540p', type: 'Video' }],
+        ['AVmp', { name: 'AVID IMX PAL', type: 'Video' }],
+        
+        ['mjp2', { name: 'JPEG 2000 produced by FCP', type: 'Video' }],
+        ['tga ', { name: 'Truevision Targa', type: 'Video' }],
+        ['tiff', { name: 'TIFF embedded in MOV', type: 'Video' }],
+        ['gif ', { name: 'embedded gif files', type: 'Video' }],
+        ['png ', { name: 'PNG', type: 'Video' }],
+        ['MNG ', { name: 'MNG', type: 'Video' }],
+        
+        ['vc-1', { name: 'SMPTE RP 2025', type: 'Video' }],
+        ['avs2', { name: 'AVS2', type: 'Video' }],
+        ['drac', { name: 'Dirac', type: 'Video' }],
+        ['AVdn', { name: 'AVID DNxHD', type: 'Video' }],
+        ['3IVD', { name: '3ivx DivX Doctor', type: 'Video' }],
+        ['AV1x', { name: 'AVID 1:1x', type: 'Video' }],
+        ['AVup', { name: 'AVID', type: 'Video' }],
+        ['sgi ', { name: 'SGI', type: 'Video' }],
+        ['dpx ', { name: 'DPX', type: 'Video' }],
+        ['exr ', { name: 'OpenEXR', type: 'Video' }],
+        
+        ['apch', { name: 'Apple ProRes 422 High Quality', type: 'Video' }],
+        ['apcn', { name: 'Apple ProRes 422 Standard Definition', type: 'Video' }],
+        ['apcs', { name: 'Apple ProRes 422 LT', type: 'Video' }],
+        ['apco', { name: 'Apple ProRes 422 Proxy', type: 'Video' }],
+        ['ap4h', { name: 'Apple ProRes 4444', type: 'Video' }],
+        ['flic', { name: 'FLI/FLC animation', type: 'Video' }],
+        
+        // AVS系列特殊处理
+        ['avst', { name: 'AVS2', type: 'Video' }],
+        ['avs3', { name: 'AVS3', type: 'Video' }],
+        
+        // 音频编码格式
+        ['mp4a', { name: 'AAC', type: 'Audio' }],
+        ['ac-3', { name: 'AC-3', type: 'Audio' }],
+        ['sac3', { name: 'AC-3 (Nero Recode)', type: 'Audio' }],
+        ['ima4', { name: 'IMA ADPCM', type: 'Audio' }],
+        ['alac', { name: 'Apple Lossless', type: 'Audio' }],
+        ['samr', { name: 'AMR-NB 3gp', type: 'Audio' }],
+        ['sawb', { name: 'AMR-WB 3gp', type: 'Audio' }],
+        ['dtsc', { name: 'DTS formats prior to DTS-HD', type: 'Audio' }],
+        ['dtsh', { name: 'DTS-HD audio formats', type: 'Audio' }],
+        ['dtsl', { name: 'DTS-HD Lossless formats', type: 'Audio' }],
+        ['DTS ', { name: 'DTS (non-standard)', type: 'Audio' }],
+        ['ec-3', { name: 'E-AC-3', type: 'Audio' }],
+        ['vdva', { name: 'DV Audio', type: 'Audio' }],
+        ['dvca', { name: 'DV Audio', type: 'Audio' }],
+        ['agsm', { name: 'GSM', type: 'Audio' }],
+        ['ilbc', { name: 'iLBC', type: 'Audio' }],
+        ['MAC3', { name: 'MACE 3:1', type: 'Audio' }],
+        ['MAC6', { name: 'MACE 6:1', type: 'Audio' }],
+        ['.mp1', { name: 'MPEG-1 Audio Layer I', type: 'Audio' }],
+        ['.mp2', { name: 'MPEG-1 Audio Layer II', type: 'Audio' }],
+        ['.mp3', { name: 'MPEG-1 Audio Layer III', type: 'Audio' }],
+        ['nmos', { name: 'Nellymoser (Flash Media Server)', type: 'Audio' }],
+        ['alaw', { name: 'A-law PCM', type: 'Audio' }],
+        ['fl32', { name: '32-bit float PCM', type: 'Audio' }],
+        ['fl64', { name: '64-bit float PCM', type: 'Audio' }],
+        ['ulaw', { name: 'μ-law PCM', type: 'Audio' }],
+        ['twos', { name: '16-bit BE PCM', type: 'Audio' }],
+        ['sowt', { name: '16-bit LE PCM', type: 'Audio' }],
+        ['lpcm', { name: '16-bit LE PCM', type: 'Audio' }],
+        ['in24', { name: '24-bit PCM', type: 'Audio' }],
+        ['in32', { name: '32-bit PCM', type: 'Audio' }],
+        ['raw ', { name: '8-bit unsigned PCM', type: 'Audio' }],
+        ['NONE', { name: '8-bit unsigned PCM', type: 'Audio' }],
+        ['Qclp', { name: 'QCELP', type: 'Audio' }],
+        ['Qclq', { name: 'QCELP', type: 'Audio' }],
+        ['sqcp', { name: 'QCELP (ISO Media fourcc)', type: 'Audio' }],
+        ['QDM2', { name: 'QDesign Music Codec 2', type: 'Audio' }],
+        ['QDMC', { name: 'QDesign Music Codec', type: 'Audio' }],
+        ['spex', { name: 'Speex (Flash Media Server)', type: 'Audio' }],
+        ['WMA2', { name: 'Windows Media Audio 2', type: 'Audio' }],
+        
+        // Audio Vivid 特殊处理
+        ['av3a', { name: 'Audio Vivid', type: 'Audio' }],
+        
+        // 字幕编码格式 (ff_codec_movsubtitle_tags)
+        ['text', { name: 'QuickTime Text', type: 'Subtitle' }],
+        ['tx3g', { name: '3GPP Timed Text', type: 'Subtitle' }],
+        ['c608', { name: 'EIA-608 Closed Captions', type: 'Subtitle' }],
+    ]);
+
     constructor() {
         // 初始化
+    }
+
+    // 获取 FourCC 对应的编码器信息
+    private getCodecInfo(fourCC: string): { name: string; type: string } {
+        // 先查找映射表
+        const codecInfo = ISOMBFFAnalyzer.FOURCC_CODEC_MAP.get(fourCC);
+        if (codecInfo) {
+            return codecInfo;
+        }
+        
+        // 如果映射表中没有，返回原始 FourCC
+        return { 
+            name: `Unknown (${fourCC})`, 
+            type: 'Unknown' 
+        };
     }
 
     // 处理文件
@@ -200,15 +447,19 @@ export class ISOMBFFAnalyzer {
             // 纠正可能识别错误的 track type
             const correctedType = this.correctTrackType(fourCC, track);
             
+            // 获取编码器信息
+            const codecInfo = this.getCodecInfo(fourCC);
+            
             const trackInfo: MP4TrackInfo = {
                 id: track.id,
                 type: correctedType,
-                codec: fourCC
+                codec: fourCC,
+                codecInfo: codecInfo
             };
             
             this.tracks.set(track.id, trackInfo);
             
-            console.log(`📺 Track ${track.id}: ${trackInfo.type} - ${trackInfo.codec}`);
+            console.log(`📺 Track ${track.id}: ${trackInfo.type} - ${codecInfo.name} (${fourCC})`);
         }
     }
 
@@ -416,7 +667,7 @@ export class ISOMBFFAnalyzer {
         streamsContainer.innerHTML = `
             <div class="streams-section">
                 <div class="program-header">
-                    <h3>MP4 Tracks 信息</h3>
+                    <h3>Tracks 信息</h3>
                     ${hasAvsDetails ? `
                         <div class="copy-buttons">
                             <button class="copy-info-btn copy-text-btn" onclick="window.isobmffAnalyzer.copyTrackInfo()">Text 📋</button>
@@ -435,8 +686,9 @@ export class ISOMBFFAnalyzer {
                         <thead>
                             <tr>
                                 <th>Track ID</th>
-                                <th>类型</th>
+                                <th>流类型</th>
                                 <th>编码格式</th>
+                                <th>格式标识符</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -453,7 +705,7 @@ export class ISOMBFFAnalyzer {
         if (this.tracks.size === 0) {
             return `
                 <tr>
-                    <td colspan="3" style="text-align: center; padding: 20px; color: #666;">
+                    <td colspan="4" style="text-align: center; padding: 20px; color: #666;">
                         暂无 track 信息
                     </td>
                 </tr>
@@ -470,11 +722,12 @@ export class ISOMBFFAnalyzer {
                     <td>
                         <div class="codec-info-container">
                             <div class="codec-info-text">
-                                ${track.codec}
+                                ${track.codecInfo?.name || track.codec}
                             </div>
                             ${track.avsDetails ? `<button class="toggle-details-btn" onclick="toggleDetails('avs-info-${trackId}')">⏬</button>` : ''}
                         </div>
                     </td>
+                    <td>${track.codec}</td>
                 </tr>
             `;
 
@@ -482,7 +735,7 @@ export class ISOMBFFAnalyzer {
             if (track.avsDetails) {
                 html += `
                     <tr id="avs-info-${trackId}" class="avs-details-row" style="display: none;">
-                        <td colspan="3">
+                        <td colspan="4">
                             ${this.formatAVSDetailsCard(track.avsDetails, track)}
                         </td>
                     </tr>
@@ -554,15 +807,12 @@ export class ISOMBFFAnalyzer {
         
         for (const [trackId, track] of this.tracks) {
             if (track.avsDetails) {
-                // 根据 track 类型选择正确的格式化函数
+                // 根据 track 类型选择正确的格式化函数，使用 trackId 作为标识符
                 const isAudioTrack = track.type === 'audio';
-                const fullCopyText = isAudioTrack 
+                const copyText = isAudioTrack 
                     ? AVSAudioInfoToCopyFormat(track.avsDetails as AVSAudioInfo, trackId)
                     : AVSVideoInfoToCopyFormat(track.avsDetails as AVSVideoInfo, trackId);
-                // 移除第一行（ID行）
-                const lines = fullCopyText.split('\n');
-                const copyTextWithoutId = lines.slice(1).join('\n');
-                avsDetailsList.push(copyTextWithoutId);
+                avsDetailsList.push(copyText);
             }
         }
 
@@ -599,15 +849,12 @@ export class ISOMBFFAnalyzer {
         
         for (const [trackId, track] of this.tracks) {
             if (track.avsDetails) {
-                // 根据 track 类型选择正确的格式化函数
+                // 根据 track 类型选择正确的格式化函数，使用 trackId 作为标识符
                 const isAudioTrack = track.type === 'audio';
-                const fullCopyText = isAudioTrack 
+                const copyText = isAudioTrack 
                     ? AVSAudioInfoToCopyFormat(track.avsDetails as AVSAudioInfo, trackId)
                     : AVSVideoInfoToCopyFormat(track.avsDetails as AVSVideoInfo, trackId);
-                // 移除第一行（ID行）
-                const lines = fullCopyText.split('\n');
-                const copyTextWithoutId = lines.slice(1).join('\n');
-                avsDetailsList.push(copyTextWithoutId);
+                avsDetailsList.push(copyText);
             }
         }
 
